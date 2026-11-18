@@ -1,0 +1,29 @@
+# Environment & local secrets
+.env
+.env.local
+.env.*.local
+backend/src/main/resources/application-local.yml
+backend/src/main/resources/application-local.properties
+
+# Backend build & local H2 database
+backend/target/
+backend/build/
+backend/data/
+*.mv.db
+*.trace.db
+
+# Frontend dependencies & build
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDEs & OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

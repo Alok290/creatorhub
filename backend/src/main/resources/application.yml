@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/creatorhub;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE}
+    username: ${DB_USER:sa}
+    password: ${DB_PASS:}
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  expiration-ms: ${JWT_EXPIRATION_MS:604800000}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}
+
+instagram:
+  # Instagram API with Unified Login (Meta Dashboard -> Instagram API -> API setup with Unified login)
+  config-id: ${INSTAGRAM_CONFIG_ID:}
+  # Legacy Direct Instagram Login (only for older Meta apps)
+  ig-app-id: ${INSTAGRAM_APP_ID:}
+  ig-app-secret: ${INSTAGRAM_APP_SECRET:}
+  # Meta App credentials (Meta Dashboard -> App settings -> Basic)
+  client-id: ${INSTAGRAM_CLIENT_ID:}
+  client-secret: ${INSTAGRAM_CLIENT_SECRET:}
+  redirect-uri: ${INSTAGRAM_REDIRECT_URI:http://localhost:5173/auth/callback/instagram}
+
+
