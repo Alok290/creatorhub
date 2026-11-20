@@ -2,6 +2,8 @@
 
 Full-stack influencer marketing and brand collaboration platform connecting local/digital **Creators** with **Merchants/Brands**.
 
+> 💡 **For AI Agents & Developers**: See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the complete master architectural brief, design decisions, data models, Meta OAuth details, solved pitfalls, and the active task roadmap.
+
 ## Tech Stack
 - **Backend**: Spring Boot 3.2.5, Java 21, Spring Security (JWT + RBAC), Spring Data JPA, Hibernate, H2 (local file DB) / MySQL 8 (production)
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons
@@ -41,3 +43,4 @@ Copy `.env.example` to `.env` (or pass environment variables) to configure MySQL
 ```bash
 docker compose up --build
 ```
+
