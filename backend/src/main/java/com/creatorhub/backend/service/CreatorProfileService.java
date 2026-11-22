@@ -3,9 +3,11 @@ package com.creatorhub.backend.service;
 import com.creatorhub.backend.dto.CreatorProfileDto;
 import com.creatorhub.backend.dto.CreatorProfileUpdateRequest;
 import com.creatorhub.backend.entity.CreatorProfile;
+import com.creatorhub.backend.entity.MerchantProfile;
 import com.creatorhub.backend.entity.Role;
 import com.creatorhub.backend.entity.User;
 import com.creatorhub.backend.repository.CreatorProfileRepository;
+import com.creatorhub.backend.repository.MerchantProfileRepository;
 import com.creatorhub.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,12 +16,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CreatorProfileService {
 
     private final CreatorProfileRepository creatorProfileRepository;
+    private final MerchantProfileRepository merchantProfileRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -81,6 +86,110 @@ public class CreatorProfileService {
                 .stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CreatorProfileDto> searchCreatorsForMerchant(
+            String merchantPhone,
+            String category,
+            String cityFilter,
+            Double customLat,
+            Double customLng,
+            Long minFollowers,
+            String search
+    ) {
+        // Resolve brand owner's location
+        String brandCity = null;
+        Double brandLat = customLat;
+        Double brandLng = customLng;
+
+        if (merchantPhone != null && !merchantPhone.isBlank()) {
+            Optional<MerchantProfile> merchantOpt = merchantProfileRepository.findByUserPhone(merchantPhone);
+            if (merchantOpt.isPresent()) {
+                MerchantProfile m = merchantOpt.get();
+                if (m.getCity() != null && !m.getCity().isBlank()) {
+                    brandCity = m.getCity().trim();
+                }
+                if (brandLat == null && m.getLatitude() != null) {
+                    brandLat = m.getLatitude();
+                }
+                if (brandLng == null && m.getLongitude() != null) {
+                    brandLng = m.getLongitude();
+                }
+            }
+        }
+
+        final String activeCityFilter = (cityFilter != null && !cityFilter.isBlank()) ? cityFilter.trim() : null;
+        final String targetCity = activeCityFilter != null ? activeCityFilter : brandCity;
+        final Double effectiveLat = brandLat;
+        final Double effectiveLng = brandLng;
+
+        // Query available creators matching category, minFollowers, search
+        List<CreatorProfile> rawCreators = creatorProfileRepository.searchCreators(category, null, minFollowers, search);
+
+        // Map and compute proximity
+        List<CreatorProfileDto> list = rawCreators.stream().map(c -> {
+            CreatorProfileDto dto = toDto(c);
+
+            Double distance = null;
+            if (effectiveLat != null && effectiveLng != null && c.getLatitude() != null && c.getLongitude() != null) {
+                distance = calculateHaversineDistanceKm(effectiveLat, effectiveLng, c.getLatitude(), c.getLongitude());
+            }
+
+            boolean isNearby = false;
+            if (distance != null && distance <= 50.0) {
+                isNearby = true;
+            } else if (targetCity != null && c.getCity() != null && !c.getCity().isBlank()) {
+                if (c.getCity().trim().equalsIgnoreCase(targetCity.trim()) ||
+                    c.getCity().toLowerCase().contains(targetCity.toLowerCase()) ||
+                    targetCity.toLowerCase().contains(c.getCity().toLowerCase())) {
+                    isNearby = true;
+                }
+            }
+
+            dto.setDistanceKm(distance);
+            dto.setIsNearby(isNearby);
+            return dto;
+        }).collect(Collectors.toList());
+
+        // Sort: Nearby creators FIRST, then by follower count
+        list.sort((a, b) -> {
+            boolean aNear = Boolean.TRUE.equals(a.getIsNearby());
+            boolean bNear = Boolean.TRUE.equals(b.getIsNearby());
+
+            if (aNear && !bNear) return -1;
+            if (!aNear && bNear) return 1;
+
+            if (a.getDistanceKm() != null && b.getDistanceKm() != null) {
+                return Double.compare(a.getDistanceKm(), b.getDistanceKm());
+            }
+            if (a.getDistanceKm() != null) return -1;
+            if (b.getDistanceKm() != null) return 1;
+
+            long aFoll = a.getTotalFollowers() != null ? a.getTotalFollowers() : 0L;
+            long bFoll = b.getTotalFollowers() != null ? b.getTotalFollowers() : 0L;
+            return Long.compare(bFoll, aFoll);
+        });
+
+        // If explicit city filter was provided in the search bar, filter to matching creators
+        if (activeCityFilter != null) {
+            list = list.stream()
+                    .filter(c -> c.getCity() != null && c.getCity().toLowerCase().contains(activeCityFilter.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+
+        return list;
+    }
+
+    private double calculateHaversineDistanceKm(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Earth radius in km
+        double latDist = Math.toRadians(lat2 - lat1);
+        double lonDist = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDist / 2) * Math.sin(latDist / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDist / 2) * Math.sin(lonDist / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return Math.round(R * c * 10.0) / 10.0;
     }
 
     @Transactional(readOnly = true)

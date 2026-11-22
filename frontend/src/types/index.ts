@@ -47,6 +47,8 @@ export interface CreatorProfile {
   totalFollowers?: number;
   portfolioLinks?: string;
   isAvailable: boolean;
+  distanceKm?: number;
+  isNearby?: boolean;
 }
 
 export interface MerchantProfile {

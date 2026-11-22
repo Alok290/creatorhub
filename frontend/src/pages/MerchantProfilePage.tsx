@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { merchantService } from '../services/merchantService';
 import { MerchantProfile } from '../types';
-import { Store, MapPin, Globe, Mail, Save, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Store, MapPin, Globe, Mail, Save, CheckCircle2, AlertCircle, Navigation } from 'lucide-react';
 
 export const MerchantProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<Partial<MerchantProfile>>({});
@@ -9,6 +9,33 @@ export const MerchantProfilePage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+
+  const handleDetectGPS = () => {
+    if (!navigator.geolocation) return;
+    setDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setProfile((prev) => ({
+          ...prev,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude
+        }));
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+          .then((r) => r.json())
+          .then((data) => {
+            const detectedCity = data.address?.city || data.address?.town || data.address?.state_district || data.address?.suburb;
+            if (detectedCity) {
+              setProfile((prev) => ({ ...prev, city: detectedCity }));
+            }
+          })
+          .catch(() => {})
+          .finally(() => setDetectingLocation(false));
+      },
+      () => setDetectingLocation(false),
+      { timeout: 8000 }
+    );
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -163,9 +190,20 @@ export const MerchantProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                City *
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  City *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleDetectGPS}
+                  disabled={detectingLocation}
+                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center transition-colors disabled:opacity-50"
+                >
+                  <Navigation className="w-3 h-3 mr-1" />
+                  {detectingLocation ? 'Detecting...' : 'Auto-Detect GPS'}
+                </button>
+              </div>
               <input
                 type="text"
                 required

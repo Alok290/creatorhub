@@ -156,12 +156,18 @@ public class MerchantController {
 
     @GetMapping("/creators")
     public ResponseEntity<ApiResponse<List<CreatorProfileDto>>> searchCreators(
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String city,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Long minFollowers,
             @RequestParam(required = false) String search
     ) {
-        List<CreatorProfileDto> creators = creatorProfileService.searchCreators(category, city, minFollowers, search);
+        String merchantPhone = userDetails != null ? userDetails.getUsername() : null;
+        List<CreatorProfileDto> creators = creatorProfileService.searchCreatorsForMerchant(
+                merchantPhone, category, city, latitude, longitude, minFollowers, search
+        );
         return ResponseEntity.ok(ApiResponse.success(creators, "Creators retrieved"));
     }
 

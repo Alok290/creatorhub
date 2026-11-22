@@ -33,5 +33,7 @@ public class CreatorProfileDto {
     private Long totalFollowers;
     private String portfolioLinks;
     private boolean isAvailable;
+    private Double distanceKm;
+    private Boolean isNearby;
 }
 

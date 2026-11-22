@@ -43,12 +43,21 @@ export const merchantService = {
     });
   },
 
-  async searchCreators(category?: string, city?: string, minFollowers?: number, search?: string): Promise<CreatorProfile[]> {
+  async searchCreators(
+    category?: string,
+    city?: string,
+    minFollowers?: number,
+    search?: string,
+    latitude?: number,
+    longitude?: number
+  ): Promise<CreatorProfile[]> {
     const params = new URLSearchParams();
     if (category) params.append('category', category);
     if (city) params.append('city', city);
     if (minFollowers) params.append('minFollowers', minFollowers.toString());
     if (search) params.append('search', search);
+    if (latitude !== undefined) params.append('latitude', latitude.toString());
+    if (longitude !== undefined) params.append('longitude', longitude.toString());
     const query = params.toString() ? `?${params.toString()}` : '';
     return api.get<CreatorProfile[]>(`/merchants/creators${query}`);
   },
