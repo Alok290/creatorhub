@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CreatorProfile, MerchantProfile } from '../types';
 import { merchantService } from '../services/merchantService';
-import { Search, MapPin, Instagram, Youtube, Users, Sparkles, Navigation, X } from 'lucide-react';
+import { Search, MapPin, Instagram, Youtube, Users, Sparkles, Navigation, X, Filter, Check } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Food & Beverage', 'Fitness & Health', 'Tech & Gadgets', 'Fashion & Beauty', 'Travel & Lifestyle'];
 
@@ -15,13 +15,14 @@ export const MerchantCreatorDirectory: React.FC = () => {
   const [minFollowers, setMinFollowers] = useState<string>('');
   const [search, setSearch] = useState('');
 
-  // Proximity location state
+  // Proximity & Strict Filtering state
   const [activeBrandLocation, setActiveBrandLocation] = useState<string | null>(null);
   const [deviceCoords, setDeviceCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyOnly, setNearbyOnly] = useState<boolean>(true); // Default to strict nearby filter
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  // 1. Initial Load: Fetch Merchant Profile to determine brand's home location
+  // 1. Initial Load: Fetch Merchant Profile to determine brand's saved location
   useEffect(() => {
     const initLocationAndTalent = async () => {
       try {
@@ -29,28 +30,38 @@ export const MerchantCreatorDirectory: React.FC = () => {
         setMerchantProfile(profile);
 
         if (profile.city && profile.city.trim() !== '') {
-          setActiveBrandLocation(profile.city.trim());
+          const cleanCity = profile.city.trim();
+          setActiveBrandLocation(cleanCity);
+          setCity(cleanCity);
           if (profile.latitude && profile.longitude) {
             setDeviceCoords({ lat: profile.latitude, lng: profile.longitude });
           }
+          fetchCreators(cleanCity, profile.latitude && profile.longitude ? { lat: profile.latitude, lng: profile.longitude } : null, true);
+          return;
         }
       } catch (err) {
         console.warn('Could not load merchant profile for default proximity:', err);
       }
+      fetchCreators();
     };
 
     initLocationAndTalent();
   }, []);
 
-  // 2. Fetch Creators using proximity sorting
-  const fetchCreators = async (overrideCity?: string, overrideCoords?: { lat: number; lng: number } | null) => {
+  // 2. Fetch Creators using proximity sorting & strict filtering
+  const fetchCreators = async (
+    overrideCity?: string,
+    overrideCoords?: { lat: number; lng: number } | null,
+    overrideNearbyOnly?: boolean
+  ) => {
     setLoading(true);
     setLocationError(null);
     try {
       const cat = selectedCategory !== 'All' ? selectedCategory : undefined;
       const minF = minFollowers ? Number(minFollowers) : undefined;
-      const queryCity = overrideCity !== undefined ? overrideCity : (city || undefined);
+      const queryCity = overrideCity !== undefined ? overrideCity : (city.trim() || undefined);
       const coords = overrideCoords !== undefined ? overrideCoords : deviceCoords;
+      const isStrictNearby = overrideNearbyOnly !== undefined ? overrideNearbyOnly : nearbyOnly;
 
       const data = await merchantService.searchCreators(
         cat,
@@ -58,7 +69,8 @@ export const MerchantCreatorDirectory: React.FC = () => {
         minF,
         search || undefined,
         coords?.lat,
-        coords?.lng
+        coords?.lng,
+        isStrictNearby
       );
       setCreators(data);
     } catch (err) {
@@ -69,15 +81,17 @@ export const MerchantCreatorDirectory: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCreators();
-  }, [selectedCategory, activeBrandLocation, deviceCoords]);
+    if (merchantProfile !== null || !loading) {
+      fetchCreators(city.trim() || undefined, deviceCoords, nearbyOnly);
+    }
+  }, [selectedCategory, nearbyOnly]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchCreators();
+    fetchCreators(city.trim() || undefined, deviceCoords, nearbyOnly);
   };
 
-  // 3. Real HTML5 GPS Geolocation handler
+  // 3. Real HTML5 GPS Geolocation handler with Reverse Geocoding
   const handleDetectDeviceLocation = () => {
     if (!navigator.geolocation) {
       setLocationError('Geolocation is not supported by your browser.');
@@ -88,30 +102,56 @@ export const MerchantCreatorDirectory: React.FC = () => {
     setLocationError(null);
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const coords = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude
         };
         setDeviceCoords(coords);
-        setActiveBrandLocation('Current Device GPS');
+
+        let detectedCityName = 'My Location';
+        try {
+          const resp = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`
+          );
+          if (resp.ok) {
+            const data = await resp.json();
+            const resCity =
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.state_district ||
+              data.address?.city_district ||
+              data.address?.suburb ||
+              data.address?.state ||
+              '';
+            if (resCity) {
+              detectedCityName = resCity;
+              setCity(resCity);
+            }
+          }
+        } catch (err) {
+          console.warn('Reverse geocoding warning:', err);
+        }
+
+        setActiveBrandLocation(detectedCityName);
         setLocating(false);
-        fetchCreators(city || undefined, coords);
+        fetchCreators(detectedCityName !== 'My Location' ? detectedCityName : undefined, coords, nearbyOnly);
       },
       (err) => {
         console.warn('Geolocation error:', err);
-        setLocationError('Could not detect location. Please type your city manually.');
+        setLocationError('Could not detect location. Please type your city in the search box.');
         setLocating(false);
       },
       { timeout: 10000, enableHighAccuracy: true }
     );
   };
 
-  const handleClearLocationFilter = () => {
+  const handleShowAll = () => {
     setCity('');
     setActiveBrandLocation(null);
     setDeviceCoords(null);
-    fetchCreators('', null);
+    setNearbyOnly(false);
+    fetchCreators('', null, false);
   };
 
   return (
@@ -120,12 +160,12 @@ export const MerchantCreatorDirectory: React.FC = () => {
         <span className="text-xs font-bold text-brand-600 uppercase tracking-wider">Talent Discovery</span>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">Creator Directory</h1>
         <p className="text-sm text-slate-500 mt-1">
-          By default, creators are automatically prioritized nearby your brand location.
+          Find and partner with top creators. Filter by location to discover local talent in your city.
         </p>
       </div>
 
       {/* Proximity / Location Banner */}
-      {activeBrandLocation ? (
+      {activeBrandLocation || city ? (
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
@@ -133,16 +173,32 @@ export const MerchantCreatorDirectory: React.FC = () => {
             </div>
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center">
-                <Sparkles className="w-3.5 h-3.5 mr-1" /> Hyper-Local Talent Matching Active
+                <Sparkles className="w-3.5 h-3.5 mr-1" />
+                {nearbyOnly ? 'Strict Location Filter Active' : 'Nearby Talent Prioritized'}
               </div>
               <p className="text-sm font-semibold text-slate-800">
-                Creators located near your brand in <span className="text-emerald-800 font-bold">{activeBrandLocation}</span> are prioritized at the top.
+                {nearbyOnly ? (
+                  <>Showing <strong className="text-emerald-800">ONLY</strong> creators located in or near <span className="text-emerald-800 font-bold underline">{activeBrandLocation || city}</span>.</>
+                ) : (
+                  <>Creators near <span className="text-emerald-800 font-bold">{activeBrandLocation || city}</span> are prioritized at the top.</>
+                )}
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleClearLocationFilter}
+              onClick={() => setNearbyOnly(!nearbyOnly)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center shadow-2xs ${
+                nearbyOnly
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <Check className={`w-3.5 h-3.5 mr-1 ${nearbyOnly ? 'opacity-100' : 'opacity-0'}`} />
+              Only Show Nearby ({activeBrandLocation || city})
+            </button>
+            <button
+              onClick={handleShowAll}
               className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-2xs"
             >
               Show All India
@@ -150,10 +206,10 @@ export const MerchantCreatorDirectory: React.FC = () => {
             <button
               onClick={handleDetectDeviceLocation}
               disabled={locating}
-              className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors flex items-center"
+              className="px-3 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-lg shadow-sm transition-colors flex items-center"
             >
               <Navigation className="w-3.5 h-3.5 mr-1" />
-              {locating ? 'Detecting...' : 'Use Live GPS'}
+              {locating ? 'Detecting...' : 'Detect GPS'}
             </button>
           </div>
         </div>
@@ -166,7 +222,7 @@ export const MerchantCreatorDirectory: React.FC = () => {
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Local Proximity Match</div>
               <p className="text-xs text-slate-600">
-                Set your brand city in Profile or detect live GPS location to automatically prioritize local creators.
+                Filter by your city or click below to detect your current location and discover local creators in your area.
               </p>
             </div>
           </div>
@@ -176,7 +232,7 @@ export const MerchantCreatorDirectory: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-xl shadow-sm transition-colors flex items-center flex-shrink-0"
           >
             <Navigation className="w-3.5 h-3.5 mr-1.5" />
-            {locating ? 'Detecting...' : 'Detect My Location'}
+            {locating ? 'Detecting Location...' : 'Detect My Location'}
           </button>
         </div>
       )}
@@ -205,7 +261,7 @@ export const MerchantCreatorDirectory: React.FC = () => {
             <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
             <input
               type="text"
-              placeholder={activeBrandLocation ? `Filtering near ${activeBrandLocation}` : 'City (e.g. Mumbai, Bengaluru)'}
+              placeholder="Filter by City (e.g. Bengaluru, Mumbai)"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               className="w-full pl-10 pr-8 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
@@ -213,7 +269,10 @@ export const MerchantCreatorDirectory: React.FC = () => {
             {city && (
               <button
                 type="button"
-                onClick={() => setCity('')}
+                onClick={() => {
+                  setCity('');
+                  fetchCreators('', deviceCoords, false);
+                }}
                 className="absolute right-2.5 top-3 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
@@ -229,21 +288,35 @@ export const MerchantCreatorDirectory: React.FC = () => {
           </button>
         </form>
 
-        {/* Category Pills */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                selectedCategory === cat
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* Category Pills & Strict Toggle */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  selectedCategory === cat
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {(city || activeBrandLocation) && (
+            <label className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={nearbyOnly}
+                onChange={(e) => setNearbyOnly(e.target.checked)}
+                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
+              />
+              <span>Only show creators in {city || activeBrandLocation}</span>
+            </label>
+          )}
         </div>
       </div>
 
@@ -255,10 +328,24 @@ export const MerchantCreatorDirectory: React.FC = () => {
           ))}
         </div>
       ) : creators.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
-          <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800">No creators found</h3>
-          <p className="text-xs text-slate-400 mt-1">Try broadening your search or selecting another category.</p>
+        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 space-y-3">
+          <MapPin className="w-12 h-12 text-slate-300 mx-auto" />
+          <h3 className="text-base font-bold text-slate-800">
+            {city || activeBrandLocation ? `No creators found in ${city || activeBrandLocation}` : 'No creators found'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            {nearbyOnly
+              ? `There are currently no creators registered in "${city || activeBrandLocation}". You can turn off the "Only Show Nearby" filter or click below to discover creators in other regions.`
+              : 'Try broadening your search or selecting another category.'}
+          </p>
+          {(city || nearbyOnly) && (
+            <button
+              onClick={handleShowAll}
+              className="mt-3 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-brand-600 transition-colors shadow-sm"
+            >
+              Browse All Creators Across India
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

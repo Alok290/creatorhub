@@ -96,7 +96,8 @@ public class CreatorProfileService {
             Double customLat,
             Double customLng,
             Long minFollowers,
-            String search
+            String search,
+            Boolean nearbyOnly
     ) {
         // Resolve brand owner's location
         String brandCity = null;
@@ -174,7 +175,17 @@ public class CreatorProfileService {
         // If explicit city filter was provided in the search bar, filter to matching creators
         if (activeCityFilter != null) {
             list = list.stream()
-                    .filter(c -> c.getCity() != null && c.getCity().toLowerCase().contains(activeCityFilter.toLowerCase()))
+                    .filter(c -> c.getCity() != null && (
+                            c.getCity().toLowerCase().contains(activeCityFilter.toLowerCase()) ||
+                            activeCityFilter.toLowerCase().contains(c.getCity().toLowerCase())
+                    ))
+                    .collect(Collectors.toList());
+        }
+
+        // If nearbyOnly is requested, strictly retain only creators matching the merchant's area
+        if (Boolean.TRUE.equals(nearbyOnly)) {
+            list = list.stream()
+                    .filter(c -> Boolean.TRUE.equals(c.getIsNearby()))
                     .collect(Collectors.toList());
         }
 

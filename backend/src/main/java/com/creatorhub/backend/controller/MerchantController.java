@@ -162,11 +162,12 @@ public class MerchantController {
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Long minFollowers,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "false") Boolean nearbyOnly
     ) {
         String merchantPhone = userDetails != null ? userDetails.getUsername() : null;
         List<CreatorProfileDto> creators = creatorProfileService.searchCreatorsForMerchant(
-                merchantPhone, category, city, latitude, longitude, minFollowers, search
+                merchantPhone, category, city, latitude, longitude, minFollowers, search, nearbyOnly
         );
         return ResponseEntity.ok(ApiResponse.success(creators, "Creators retrieved"));
     }

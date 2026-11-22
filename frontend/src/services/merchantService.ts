@@ -49,7 +49,8 @@ export const merchantService = {
     minFollowers?: number,
     search?: string,
     latitude?: number,
-    longitude?: number
+    longitude?: number,
+    nearbyOnly?: boolean
   ): Promise<CreatorProfile[]> {
     const params = new URLSearchParams();
     if (category) params.append('category', category);
@@ -58,6 +59,7 @@ export const merchantService = {
     if (search) params.append('search', search);
     if (latitude !== undefined) params.append('latitude', latitude.toString());
     if (longitude !== undefined) params.append('longitude', longitude.toString());
+    if (nearbyOnly !== undefined) params.append('nearbyOnly', nearbyOnly.toString());
     const query = params.toString() ? `?${params.toString()}` : '';
     return api.get<CreatorProfile[]>(`/merchants/creators${query}`);
   },
