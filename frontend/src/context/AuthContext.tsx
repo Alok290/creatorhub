@@ -23,7 +23,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('creatorhub_token'));
   const [loading, setLoading] = useState<boolean>(true);
 
-  const role: Role | null = user?.role || null;
+  const role: Role | null = user?.role
+    ? (String(user.role).replace(/^ROLE_/, '').toUpperCase() as Role)
+    : null;
 
   const refreshUser = async () => {
     try {

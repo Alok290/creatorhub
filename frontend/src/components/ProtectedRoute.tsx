@@ -25,10 +25,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRole }) =
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRole && role !== allowedRole) {
-    if (role === 'CREATOR') {
+  const currentRole = role ? (String(role).replace(/^ROLE_/, '').toUpperCase() as Role) : null;
+  const targetRole = allowedRole ? (String(allowedRole).replace(/^ROLE_/, '').toUpperCase() as Role) : null;
+
+  if (targetRole && currentRole !== targetRole) {
+    if (currentRole === 'CREATOR') {
       return <Navigate to="/creator/dashboard" replace />;
-    } else if (role === 'MERCHANT') {
+    } else if (currentRole === 'MERCHANT') {
       return <Navigate to="/merchant/dashboard" replace />;
     }
     return <Navigate to="/" replace />;

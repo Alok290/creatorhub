@@ -32,7 +32,10 @@ export const Register: React.FC = () => {
 
     try {
       await register(phone, role, password, email || undefined);
-      if (role === 'MERCHANT') {
+      const saved = localStorage.getItem('creatorhub_user');
+      const user = saved ? JSON.parse(saved) : null;
+      const userRole = user?.role ? String(user.role).replace(/^ROLE_/, '').toUpperCase() : role;
+      if (userRole === 'MERCHANT') {
         navigate('/merchant/dashboard');
       } else {
         navigate('/creator/dashboard');
@@ -136,7 +139,7 @@ export const Register: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="+919876543210"
+                  placeholder="e.g. +91 98765 43210"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"

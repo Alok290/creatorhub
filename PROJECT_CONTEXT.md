@@ -15,12 +15,16 @@ Brands frequently struggle to discover verified local and niche digital creators
 - **Application & Deal Lifecycle**: Creators apply with custom pitch notes and quotes; brands review media kits, accept/reject, inspect deliverable proofs, and mark deals as paid.
 - **Creator Discovery Directory**: Brands can search and filter verified creators by audience size, category, and location.
 
-### Core Philosophy & Strict Constraints
-1. **100% REAL DATA — ZERO MOCK / DUMMY METRICS**:
+### Core Philosophy & Strict Production Constraints
+1. **ABSOLUTE RULE: 100% REAL DATA — ZERO FAKE, DUMMY, OR DEMO CODE**:
    - Strictly **no simulated or hardcoded metrics** (e.g., no default 25,000 follower counts, no fake profile presets).
-   - If an Instagram account has 1 follower, the system must display `1`. If no account is linked, it displays `0` or unverified state.
-   - All creator statistics must stem from real user inputs or real Meta Graph API sync.
-2. **Secrets Management**:
+   - Strictly **no mock seeding, demo filler buttons, or sample datasets** anywhere in production code or UI.
+   - If an Instagram account has 1 follower, the system must display `1`. If no account is linked, it displays `0` or an unverified state.
+   - Every single feature, endpoint, and UI element must be **fully real, functional, and ready for production deployment**.
+2. **Production-Ready Implementation Standard**:
+   - Every entity, service, controller, and frontend view must connect to real persistence (H2/MySQL) and real user interactions.
+   - All forms, actions, and workflows must be complete and handle actual user input with proper validation and error states.
+3. **Secrets Management**:
    - Production and Meta App secrets must **never be committed to Git**.
    - Git ignores `.env`, `application-local.yml`, and local database files.
 
@@ -429,3 +433,4 @@ For any agent resuming this project, here are the exact active next priorities:
 ---
 
 *This document was last updated for CreatorHub v1.0. Any modifications to architecture or core schema must be reflected here.*
+

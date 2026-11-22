@@ -10,7 +10,7 @@ import { Sparkles, ArrowRight, MapPin, Users, Briefcase, TrendingUp, CheckCircle
 export const Home: React.FC = () => {
   const [featuredCampaigns, setFeaturedCampaigns] = useState<Campaign[]>([]);
   const [featuredCreators, setFeaturedCreators] = useState<CreatorProfile[]>([]);
-  const [stats, setStats] = useState({ totalCreators: 2, activeCampaigns: 3, totalUsers: 4 });
+  const [stats, setStats] = useState({ totalCreators: 0, activeCampaigns: 0, totalUsers: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export const Home: React.FC = () => {
         const [camps, creators, statData] = await Promise.all([
           campaignService.getFeaturedCampaigns(),
           merchantService.searchCreators(),
-          merchantService.getPlatformStats().catch(() => ({ totalCreators: 12, activeCampaigns: 8, totalUsers: 30 }))
+          merchantService.getPlatformStats().catch(() => ({ totalCreators: 0, activeCampaigns: 0, totalUsers: 0 }))
         ]);
         setFeaturedCampaigns(camps);
         setFeaturedCreators(creators);
@@ -75,13 +75,13 @@ export const Home: React.FC = () => {
           <div className="mt-16 grid grid-cols-2 md:grid-cols-3 gap-6 max-w-3xl mx-auto bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div>
               <div className="text-3xl font-extrabold text-brand-600">
-                {stats.activeCampaigns}+
+                {stats.activeCampaigns}
               </div>
               <div className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Active Campaigns</div>
             </div>
             <div>
               <div className="text-3xl font-extrabold text-indigo-600">
-                {stats.totalCreators}+
+                {stats.totalCreators}
               </div>
               <div className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Verified Creators</div>
             </div>

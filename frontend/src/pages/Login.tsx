@@ -29,7 +29,8 @@ export const Login: React.FC = () => {
       // Retrieve stored user to determine redirect
       const saved = localStorage.getItem('creatorhub_user');
       const user = saved ? JSON.parse(saved) : null;
-      if (user?.role === 'MERCHANT') {
+      const userRole = user?.role ? String(user.role).replace(/^ROLE_/, '').toUpperCase() : '';
+      if (userRole === 'MERCHANT') {
         navigate('/merchant/dashboard');
       } else {
         navigate('/creator/dashboard');
@@ -39,11 +40,6 @@ export const Login: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFillDemo = (demoPhone: string) => {
-    setPhone(demoPhone);
-    setPassword('Password123!');
   };
 
   return (
@@ -101,7 +97,7 @@ export const Login: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="+919876543210"
+                  placeholder="e.g. +91 98765 43210"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-medium"
@@ -141,35 +137,30 @@ export const Login: React.FC = () => {
             </button>
           </form>
 
-          {/* Quick Demo Fillers */}
-          <div className="mt-6 pt-6 border-t border-slate-100">
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2 text-center">
-              Quick Demo One-Click Sign In
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleFillDemo('+919876543210')}
-                className="py-2 px-3 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors text-center"
+          {/* Brand / Merchant Callout */}
+          <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col space-y-3">
+            <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-center">
+              <p className="text-xs font-semibold text-indigo-950">
+                Are you a Brand or Merchant?
+              </p>
+              <p className="text-[11px] text-indigo-600 mt-0.5">
+                Post campaigns, hire creators & track deliverables.
+              </p>
+              <Link
+                to="/register?role=MERCHANT"
+                className="mt-2 inline-block px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
               >
-                Sign in as <strong>Creator</strong>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillDemo('+919111111111')}
-                className="py-2 px-3 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors text-center"
-              >
-                Sign in as <strong>Merchant</strong>
-              </button>
+                Create Merchant Account
+              </Link>
             </div>
-          </div>
 
-          <p className="mt-6 text-center text-xs text-slate-500">
-            Don't have an account yet?{' '}
-            <Link to="/register" className="font-semibold text-brand-600 hover:text-brand-700">
-              Sign up free
-            </Link>
-          </p>
+            <p className="text-center text-xs text-slate-500">
+              New Content Creator?{' '}
+              <Link to="/register?role=CREATOR" className="font-semibold text-brand-600 hover:text-brand-700">
+                Sign up free
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
 
