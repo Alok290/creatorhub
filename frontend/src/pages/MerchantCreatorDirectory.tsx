@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CreatorProfile, MerchantProfile } from '../types';
 import { merchantService } from '../services/merchantService';
-import { Search, MapPin, Instagram, Youtube, Users, Sparkles, Navigation, X, Filter, Check } from 'lucide-react';
+import { Search, MapPin, Instagram, Youtube, Users, Sparkles, Navigation, X, Check, Eye } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Food & Beverage', 'Fitness & Health', 'Tech & Gadgets', 'Fashion & Beauty', 'Travel & Lifestyle'];
+const RADIUS_OPTIONS = [10, 25, 50];
 
 export const MerchantCreatorDirectory: React.FC = () => {
   const [creators, setCreators] = useState<CreatorProfile[]>([]);
@@ -15,10 +17,11 @@ export const MerchantCreatorDirectory: React.FC = () => {
   const [minFollowers, setMinFollowers] = useState<string>('');
   const [search, setSearch] = useState('');
 
-  // Proximity & Strict Filtering state
+  // Proximity, Radius & Strict Filtering state
   const [activeBrandLocation, setActiveBrandLocation] = useState<string | null>(null);
   const [deviceCoords, setDeviceCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [nearbyOnly, setNearbyOnly] = useState<boolean>(true); // Default to strict nearby filter
+  const [nearbyOnly, setNearbyOnly] = useState<boolean>(false);
+  const [radiusKm, setRadiusKm] = useState<number>(10); // 10 km default radius!
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -33,10 +36,11 @@ export const MerchantCreatorDirectory: React.FC = () => {
           const cleanCity = profile.city.trim();
           setActiveBrandLocation(cleanCity);
           setCity(cleanCity);
+          setNearbyOnly(true);
           if (profile.latitude && profile.longitude) {
             setDeviceCoords({ lat: profile.latitude, lng: profile.longitude });
           }
-          fetchCreators(cleanCity, profile.latitude && profile.longitude ? { lat: profile.latitude, lng: profile.longitude } : null, true);
+          fetchCreators(cleanCity, profile.latitude && profile.longitude ? { lat: profile.latitude, lng: profile.longitude } : null, true, 10);
           return;
         }
       } catch (err) {
@@ -48,11 +52,12 @@ export const MerchantCreatorDirectory: React.FC = () => {
     initLocationAndTalent();
   }, []);
 
-  // 2. Fetch Creators using proximity sorting & strict filtering
+  // 2. Fetch Creators using proximity sorting & radius filtering
   const fetchCreators = async (
     overrideCity?: string,
     overrideCoords?: { lat: number; lng: number } | null,
-    overrideNearbyOnly?: boolean
+    overrideNearbyOnly?: boolean,
+    overrideRadius?: number
   ) => {
     setLoading(true);
     setLocationError(null);
@@ -62,6 +67,7 @@ export const MerchantCreatorDirectory: React.FC = () => {
       const queryCity = overrideCity !== undefined ? overrideCity : (city.trim() || undefined);
       const coords = overrideCoords !== undefined ? overrideCoords : deviceCoords;
       const isStrictNearby = overrideNearbyOnly !== undefined ? overrideNearbyOnly : nearbyOnly;
+      const effectiveRadius = overrideRadius !== undefined ? overrideRadius : radiusKm;
 
       const data = await merchantService.searchCreators(
         cat,
@@ -70,7 +76,8 @@ export const MerchantCreatorDirectory: React.FC = () => {
         search || undefined,
         coords?.lat,
         coords?.lng,
-        isStrictNearby
+        isStrictNearby,
+        effectiveRadius
       );
       setCreators(data);
     } catch (err) {
@@ -82,13 +89,20 @@ export const MerchantCreatorDirectory: React.FC = () => {
 
   useEffect(() => {
     if (merchantProfile !== null || !loading) {
-      fetchCreators(city.trim() || undefined, deviceCoords, nearbyOnly);
+      fetchCreators(city.trim() || undefined, deviceCoords, nearbyOnly, radiusKm);
     }
-  }, [selectedCategory, nearbyOnly]);
+  }, [selectedCategory, nearbyOnly, radiusKm]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchCreators(city.trim() || undefined, deviceCoords, nearbyOnly);
+    const cleanCity = city.trim();
+    if (cleanCity) {
+      setActiveBrandLocation(cleanCity);
+      setNearbyOnly(true);
+      fetchCreators(cleanCity, deviceCoords, true, radiusKm);
+    } else {
+      fetchCreators(undefined, deviceCoords, nearbyOnly, radiusKm);
+    }
   };
 
   // 3. Real HTML5 GPS Geolocation handler with Reverse Geocoding
@@ -134,8 +148,9 @@ export const MerchantCreatorDirectory: React.FC = () => {
         }
 
         setActiveBrandLocation(detectedCityName);
+        setNearbyOnly(true);
         setLocating(false);
-        fetchCreators(detectedCityName !== 'My Location' ? detectedCityName : undefined, coords, nearbyOnly);
+        fetchCreators(detectedCityName !== 'My Location' ? detectedCityName : undefined, coords, true, radiusKm);
       },
       (err) => {
         console.warn('Geolocation error:', err);
@@ -151,7 +166,7 @@ export const MerchantCreatorDirectory: React.FC = () => {
     setActiveBrandLocation(null);
     setDeviceCoords(null);
     setNearbyOnly(false);
-    fetchCreators('', null, false);
+    fetchCreators('', null, false, 50);
   };
 
   return (
@@ -160,13 +175,13 @@ export const MerchantCreatorDirectory: React.FC = () => {
         <span className="text-xs font-bold text-brand-600 uppercase tracking-wider">Talent Discovery</span>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">Creator Directory</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Find and partner with top creators. Filter by location to discover local talent in your city.
+          Showing creators within <strong className="text-brand-600">{radiusKm} km</strong> of your location by default.
         </p>
       </div>
 
       {/* Proximity / Location Banner */}
       {activeBrandLocation || city ? (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
               <MapPin className="w-5 h-5 text-emerald-600" />
@@ -174,42 +189,64 @@ export const MerchantCreatorDirectory: React.FC = () => {
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center">
                 <Sparkles className="w-3.5 h-3.5 mr-1" />
-                {nearbyOnly ? 'Strict Location Filter Active' : 'Nearby Talent Prioritized'}
+                Hyper-Local Radius Match ({radiusKm} km)
               </div>
               <p className="text-sm font-semibold text-slate-800">
                 {nearbyOnly ? (
-                  <>Showing <strong className="text-emerald-800">ONLY</strong> creators located in or near <span className="text-emerald-800 font-bold underline">{activeBrandLocation || city}</span>.</>
+                  <>Showing creators within <strong className="text-emerald-800 underline">{radiusKm} km</strong> of <span className="text-emerald-900 font-bold">{activeBrandLocation || city}</span>.</>
                 ) : (
-                  <>Creators near <span className="text-emerald-800 font-bold">{activeBrandLocation || city}</span> are prioritized at the top.</>
+                  <>Creators within <span className="text-emerald-800 font-bold">{radiusKm} km</span> of <span className="text-emerald-900 font-bold">{activeBrandLocation || city}</span> prioritized first.</>
                 )}
               </p>
             </div>
           </div>
+
           <div className="flex flex-wrap items-center gap-2">
+            {/* Radius Selector Pills */}
+            <div className="inline-flex items-center bg-white rounded-xl border border-emerald-200 p-1 shadow-2xs">
+              <span className="text-[11px] font-bold text-slate-400 px-2 uppercase">Radius:</span>
+              {RADIUS_OPTIONS.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRadiusKm(r)}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                    radiusKm === r
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-emerald-900 hover:bg-emerald-50'
+                  }`}
+                >
+                  {r} km
+                </button>
+              ))}
+            </div>
+
             <button
               onClick={() => setNearbyOnly(!nearbyOnly)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center shadow-2xs ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center shadow-2xs ${
                 nearbyOnly
                   ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                   : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
               <Check className={`w-3.5 h-3.5 mr-1 ${nearbyOnly ? 'opacity-100' : 'opacity-0'}`} />
-              Only Show Nearby ({activeBrandLocation || city})
+              Strict Nearby Only
             </button>
+
             <button
               onClick={handleShowAll}
-              className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-2xs"
+              className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-2xs"
             >
               Show All India
             </button>
+
             <button
               onClick={handleDetectDeviceLocation}
               disabled={locating}
-              className="px-3 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-lg shadow-sm transition-colors flex items-center"
+              className="px-3 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-xl shadow-sm transition-colors flex items-center"
             >
               <Navigation className="w-3.5 h-3.5 mr-1" />
-              {locating ? 'Detecting...' : 'Detect GPS'}
+              {locating ? 'GPS...' : 'Detect GPS'}
             </button>
           </div>
         </div>
@@ -220,9 +257,9 @@ export const MerchantCreatorDirectory: React.FC = () => {
               <MapPin className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Local Proximity Match</div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">10 km Local Proximity Match</div>
               <p className="text-xs text-slate-600">
-                Filter by your city or click below to detect your current location and discover local creators in your area.
+                Filter by your city or click below to detect your current location and discover creators within 10 km.
               </p>
             </div>
           </div>
@@ -232,7 +269,7 @@ export const MerchantCreatorDirectory: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-xl shadow-sm transition-colors flex items-center flex-shrink-0"
           >
             <Navigation className="w-3.5 h-3.5 mr-1.5" />
-            {locating ? 'Detecting Location...' : 'Detect My Location'}
+            {locating ? 'Detecting Location...' : 'Detect My Location (10 km)'}
           </button>
         </div>
       )}
@@ -271,7 +308,7 @@ export const MerchantCreatorDirectory: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setCity('');
-                  fetchCreators('', deviceCoords, false);
+                  fetchCreators('', deviceCoords, false, radiusKm);
                 }}
                 className="absolute right-2.5 top-3 text-slate-400 hover:text-slate-600"
               >
@@ -314,7 +351,7 @@ export const MerchantCreatorDirectory: React.FC = () => {
                 onChange={(e) => setNearbyOnly(e.target.checked)}
                 className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
               />
-              <span>Only show creators in {city || activeBrandLocation}</span>
+              <span>Only show within {radiusKm} km of {city || activeBrandLocation}</span>
             </label>
           )}
         </div>
@@ -328,24 +365,46 @@ export const MerchantCreatorDirectory: React.FC = () => {
           ))}
         </div>
       ) : creators.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 space-y-3">
+        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 space-y-4">
           <MapPin className="w-12 h-12 text-slate-300 mx-auto" />
           <h3 className="text-base font-bold text-slate-800">
-            {city || activeBrandLocation ? `No creators found in ${city || activeBrandLocation}` : 'No creators found'}
+            {city || activeBrandLocation
+              ? `No creators found within ${radiusKm} km of ${city || activeBrandLocation}`
+              : 'No creators found'}
           </h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
+          <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
             {nearbyOnly
-              ? `There are currently no creators registered in "${city || activeBrandLocation}". You can turn off the "Only Show Nearby" filter or click below to discover creators in other regions.`
+              ? `There are currently no creators registered within ${radiusKm} km of "${city || activeBrandLocation}". You can expand your radius to 25 km or 50 km to find creators across your metro area.`
               : 'Try broadening your search or selecting another category.'}
           </p>
-          {(city || nearbyOnly) && (
+
+          <div className="flex flex-wrap justify-center items-center gap-3 pt-2">
+            {radiusKm === 10 && (
+              <button
+                type="button"
+                onClick={() => setRadiusKm(25)}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                Expand Radius to 25 km
+              </button>
+            )}
+            {radiusKm === 25 && (
+              <button
+                type="button"
+                onClick={() => setRadiusKm(50)}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                Expand Radius to 50 km
+              </button>
+            )}
             <button
+              type="button"
               onClick={handleShowAll}
-              className="mt-3 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-brand-600 transition-colors shadow-sm"
+              className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-brand-600 transition-colors shadow-sm"
             >
-              Browse All Creators Across India
+              Browse All Across India
             </button>
-          )}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -373,12 +432,12 @@ export const MerchantCreatorDirectory: React.FC = () => {
                   <img
                     src={c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}
                     alt={c.displayName}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-brand-100 shadow-sm"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-brand-100 shadow-sm flex-shrink-0"
                   />
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">{c.displayName}</h3>
-                    <p className="text-xs text-slate-500 flex items-center mt-0.5">
-                      <MapPin className="w-3 h-3 mr-1 text-slate-400" /> {c.city || 'Location flexible'}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-bold text-slate-900 truncate">{c.displayName}</h3>
+                    <p className="text-xs text-slate-500 flex items-center mt-0.5 truncate">
+                      <MapPin className="w-3 h-3 mr-1 text-slate-400 flex-shrink-0" /> {c.city || 'Location flexible'}
                     </p>
                     <span className="inline-block mt-1 px-2 py-0.5 bg-brand-50 text-brand-700 rounded text-[11px] font-semibold">
                       {(c.totalFollowers || 0).toLocaleString()} Total Audience
@@ -412,12 +471,13 @@ export const MerchantCreatorDirectory: React.FC = () => {
                   <span className="text-[11px] text-slate-400 block font-semibold">Base Rate</span>
                   <span className="text-base font-bold text-slate-900">₹{(c.baseRate || 0).toLocaleString()}</span>
                 </div>
-                <a
-                  href={`tel:${c.phone}`}
-                  className="px-4 py-2 text-xs font-bold text-slate-900 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-colors"
+                <Link
+                  to={`/merchant/creators/${c.userId}`}
+                  className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-xl transition-all shadow-sm flex items-center hover:scale-[1.02]"
                 >
-                  Direct Contact
-                </a>
+                  <Eye className="w-3.5 h-3.5 mr-1.5" />
+                  View Profile
+                </Link>
               </div>
             </div>
           ))}

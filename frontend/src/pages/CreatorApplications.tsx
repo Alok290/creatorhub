@@ -3,7 +3,8 @@ import { Application } from '../types';
 import { creatorService } from '../services/creatorService';
 import { StatusBadge } from '../components/StatusBadge';
 import { SubmitDeliverableModal } from '../components/SubmitDeliverableModal';
-import { Briefcase, ExternalLink, MessageSquare, Star, UploadCloud, Clock, CheckCircle } from 'lucide-react';
+import { CollabChatModal } from '../components/CollabChatModal';
+import { Briefcase, ExternalLink, MessageSquare, Star, UploadCloud, Clock, CheckCircle, RotateCcw } from 'lucide-react';
 
 export const CreatorApplications: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -12,6 +13,7 @@ export const CreatorApplications: React.FC = () => {
 
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [activeChatApp, setActiveChatApp] = useState<Application | null>(null);
 
   const fetchApps = async () => {
     setLoading(true);
@@ -41,9 +43,9 @@ export const CreatorApplications: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div>
-        <span className="text-xs font-bold text-brand-600 uppercase tracking-wider">Campaign Management</span>
+        <span className="text-xs font-bold text-brand-600 uppercase tracking-wider">Collab Deals</span>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">My Applications & Collaborations</h1>
-        <p className="text-sm text-slate-500 mt-1">Track proposal statuses, upload live post proof, and receive client ratings.</p>
+        <p className="text-sm text-slate-500 mt-1">Track proposal statuses, upload live post proof, and collaborate with brands.</p>
       </div>
 
       {/* Filter Tabs */}
@@ -114,8 +116,16 @@ export const CreatorApplications: React.FC = () => {
                   </div>
                 )}
 
-                {/* Merchant feedback / rating if completed */}
-                {app.merchantFeedback && (
+                {/* Merchant feedback / revisions requested */}
+                {app.status === 'CHANGES_REQUESTED' ? (
+                  <div className="p-3 bg-amber-50 rounded-xl text-xs text-amber-900 border border-amber-200 space-y-1">
+                    <div className="flex items-center font-bold text-amber-800">
+                      <RotateCcw className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                      Improvements Requested by Brand:
+                    </div>
+                    <p className="italic font-medium">"{app.merchantFeedback || 'Please review guidelines and submit updated proof.'}"</p>
+                  </div>
+                ) : app.merchantFeedback && (
                   <div className="p-3 bg-purple-50/60 rounded-xl text-xs text-purple-900 border border-purple-100">
                     <strong className="block mb-1">Client Feedback:</strong>
                     "{app.merchantFeedback}"
@@ -125,16 +135,29 @@ export const CreatorApplications: React.FC = () => {
 
               {/* Action buttons on the side */}
               <div className="flex md:flex-col justify-end items-end gap-2 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 min-w-[180px]">
-                {(app.status === 'ACCEPTED' || app.status === 'IN_PROGRESS') && (
+                <button
+                  type="button"
+                  onClick={() => setActiveChatApp(app)}
+                  className="w-full inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-indigo-200/60"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                  Chat with Brand
+                </button>
+
+                {(app.status === 'ACCEPTED' || app.status === 'IN_PROGRESS' || app.status === 'CHANGES_REQUESTED') && (
                   <button
                     onClick={() => {
                       setSelectedApp(app);
                       setIsSubmitModalOpen(true);
                     }}
-                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm transition-all"
+                    className={`w-full inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-white rounded-xl shadow-sm transition-all ${
+                      app.status === 'CHANGES_REQUESTED'
+                        ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/20'
+                        : 'bg-brand-600 hover:bg-brand-700 shadow-brand-500/20'
+                    }`}
                   >
                     <UploadCloud className="w-4 h-4 mr-1.5" />
-                    Submit Post Proof
+                    {app.status === 'CHANGES_REQUESTED' ? 'Submit Revised Proof' : 'Submit Post Proof'}
                   </button>
                 )}
 
@@ -172,6 +195,17 @@ export const CreatorApplications: React.FC = () => {
         onSuccess={() => {
           fetchApps();
         }}
+      />
+
+      {/* Collab Chat Modal */}
+      <CollabChatModal
+        isOpen={!!activeChatApp}
+        onClose={() => setActiveChatApp(null)}
+        applicationId={activeChatApp?.id || null}
+        partnerName={activeChatApp?.merchantBrandName || 'Brand Partner'}
+        partnerRole="MERCHANT"
+        collabTitle={activeChatApp?.campaignTitle || 'Collaboration'}
+        collabStatus={activeChatApp?.status}
       />
     </div>
   );

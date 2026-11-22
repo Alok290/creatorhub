@@ -5,6 +5,7 @@ import { campaignService } from '../services/campaignService';
 import { merchantService } from '../services/merchantService';
 import { StatusBadge } from '../components/StatusBadge';
 import { ReviewApplicationModal } from '../components/ReviewApplicationModal';
+import { CollabChatModal } from '../components/CollabChatModal';
 import { ArrowLeft, Users, Briefcase, MapPin, DollarSign, Calendar, MessageSquare, CheckCircle, ExternalLink } from 'lucide-react';
 
 export const MerchantCampaignDetail: React.FC = () => {
@@ -17,6 +18,7 @@ export const MerchantCampaignDetail: React.FC = () => {
 
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [activeChatApp, setActiveChatApp] = useState<Application | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -58,7 +60,7 @@ export const MerchantCampaignDetail: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <Link to="/merchant/campaigns" className="inline-flex items-center text-xs font-bold text-slate-500 hover:text-slate-900">
-        <ArrowLeft className="w-4 h-4 mr-1" /> Back to all campaigns
+        <ArrowLeft className="w-4 h-4 mr-1" /> Back to all collabs
       </Link>
 
       {/* Campaign Details Summary Header */}
@@ -152,15 +154,25 @@ export const MerchantCampaignDetail: React.FC = () => {
                     <span className="text-sm font-bold text-slate-900">₹{app.proposedRate?.toLocaleString()}</span>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setSelectedApp(app);
-                      setIsReviewOpen(true);
-                    }}
-                    className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-xl transition-colors shadow-sm"
-                  >
-                    Review Proposal
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveChatApp(app)}
+                      className="px-3 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors inline-flex items-center"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                      Chat
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedApp(app);
+                        setIsReviewOpen(true);
+                      }}
+                      className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-xl transition-colors shadow-sm"
+                    >
+                      Review Proposal
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -176,6 +188,18 @@ export const MerchantCampaignDetail: React.FC = () => {
         onSuccess={() => {
           loadData();
         }}
+      />
+
+      {/* Collab Chat Modal */}
+      <CollabChatModal
+        isOpen={!!activeChatApp}
+        onClose={() => setActiveChatApp(null)}
+        applicationId={activeChatApp?.id || null}
+        partnerName={activeChatApp?.creatorName || 'Creator'}
+        partnerAvatarUrl={activeChatApp?.creatorAvatarUrl}
+        partnerRole="CREATOR"
+        collabTitle={campaign.title}
+        collabStatus={activeChatApp?.status}
       />
     </div>
   );

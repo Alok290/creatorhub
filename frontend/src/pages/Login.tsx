@@ -43,7 +43,7 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-[80vh] flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <Link to="/" className="inline-flex items-center space-x-2">
           <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md">
@@ -144,7 +144,7 @@ export const Login: React.FC = () => {
                 Are you a Brand or Merchant?
               </p>
               <p className="text-[11px] text-indigo-600 mt-0.5">
-                Post campaigns, hire creators & track deliverables.
+                Post collabs, hire creators & track deliverables.
               </p>
               <Link
                 to="/register?role=MERCHANT"

@@ -70,7 +70,7 @@ export const MerchantDashboard: React.FC = () => {
             to="/merchant/campaigns/new"
             className="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-colors shadow-sm"
           >
-            <PlusCircle className="w-4 h-4 mr-1.5" /> Post New Campaign
+            <PlusCircle className="w-4 h-4 mr-1.5" /> Post a Collab
           </Link>
           <Link
             to="/merchant/creators"
@@ -85,7 +85,7 @@ export const MerchantDashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Campaigns</span>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Collabs</span>
             <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <Briefcase className="w-5 h-5" />
             </div>
@@ -93,7 +93,7 @@ export const MerchantDashboard: React.FC = () => {
           <div className="mt-4 text-3xl font-extrabold text-slate-900">
             {data?.totalCampaigns || 0}
           </div>
-          <p className="mt-1 text-xs text-slate-500">Live or archived campaigns</p>
+          <p className="mt-1 text-xs text-slate-500">Active or past collabs</p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -138,11 +138,11 @@ export const MerchantDashboard: React.FC = () => {
 
       {/* Campaigns Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Active Campaigns */}
+        {/* Active Collabs */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-base font-bold text-slate-900">Your Campaigns</h2>
+              <h2 className="text-base font-bold text-slate-900">Your Collabs</h2>
               <p className="text-xs text-slate-500">Active postings receiving applications</p>
             </div>
             <Link to="/merchant/campaigns" className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center">
@@ -173,12 +173,12 @@ export const MerchantDashboard: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-xs text-slate-500">No campaigns launched yet.</p>
+              <p className="text-xs text-slate-500">No collabs posted yet.</p>
               <Link
                 to="/merchant/campaigns/new"
                 className="mt-3 inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-brand-600 rounded-xl"
               >
-                Launch First Campaign
+                Post First Collab
               </Link>
             </div>
           )}

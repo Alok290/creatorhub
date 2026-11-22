@@ -1,0 +1,13 @@
+package com.creatorhub.backend.entity;
+
+public enum NotificationType {
+    COLLAB_INVITE,
+    APPLICATION_RECEIVED,
+    APPLICATION_ACCEPTED,
+    APPLICATION_REJECTED,
+    DELIVERABLES_SUBMITTED,
+    CHANGES_REQUESTED,
+    COLLAB_COMPLETED,
+    CHAT_MESSAGE,
+    SYSTEM
+}

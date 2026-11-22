@@ -97,8 +97,11 @@ public class CreatorProfileService {
             Double customLng,
             Long minFollowers,
             String search,
-            Boolean nearbyOnly
+            Boolean nearbyOnly,
+            Double radiusKm
     ) {
+        final double maxRadius = (radiusKm != null && radiusKm > 0) ? radiusKm : 10.0;
+
         // Resolve brand owner's location
         String brandCity = null;
         Double brandLat = customLat;
@@ -138,9 +141,9 @@ public class CreatorProfileService {
             }
 
             boolean isNearby = false;
-            if (distance != null && distance <= 50.0) {
+            if (distance != null && distance <= maxRadius) {
                 isNearby = true;
-            } else if (targetCity != null && c.getCity() != null && !c.getCity().isBlank()) {
+            } else if (distance == null && targetCity != null && c.getCity() != null && !c.getCity().isBlank()) {
                 if (c.getCity().trim().equalsIgnoreCase(targetCity.trim()) ||
                     c.getCity().toLowerCase().contains(targetCity.toLowerCase()) ||
                     targetCity.toLowerCase().contains(c.getCity().toLowerCase())) {
@@ -172,8 +175,8 @@ public class CreatorProfileService {
             return Long.compare(bFoll, aFoll);
         });
 
-        // If explicit city filter was provided in the search bar, filter to matching creators
-        if (activeCityFilter != null) {
+        // If explicit city filter was provided in the search bar (and not searching via GPS coordinates), filter to matching creators
+        if (activeCityFilter != null && (effectiveLat == null || effectiveLng == null)) {
             list = list.stream()
                     .filter(c -> c.getCity() != null && (
                             c.getCity().toLowerCase().contains(activeCityFilter.toLowerCase()) ||
@@ -208,6 +211,30 @@ public class CreatorProfileService {
         CreatorProfile profile = creatorProfileRepository.findByUserId(creatorUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Creator profile not found for user id: " + creatorUserId));
         return toDto(profile);
+    }
+
+    @Transactional(readOnly = true)
+    public CreatorProfileDto getPublicCreatorProfileForMerchant(String merchantPhone, Long creatorUserId) {
+        CreatorProfile profile = creatorProfileRepository.findByUserId(creatorUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Creator profile not found for user id: " + creatorUserId));
+        CreatorProfileDto dto = toDto(profile);
+
+        if (merchantPhone != null) {
+            MerchantProfile m = merchantProfileRepository.findByUserPhone(merchantPhone).orElse(null);
+            if (m != null) {
+                if (m.getLatitude() != null && m.getLongitude() != null && profile.getLatitude() != null && profile.getLongitude() != null) {
+                    double dist = calculateHaversineDistanceKm(m.getLatitude(), m.getLongitude(), profile.getLatitude(), profile.getLongitude());
+                    dto.setDistanceKm(dist);
+                    dto.setIsNearby(dist <= 10.0);
+                } else if (m.getCity() != null && profile.getCity() != null && !profile.getCity().isBlank()) {
+                    boolean matches = profile.getCity().trim().equalsIgnoreCase(m.getCity().trim())
+                            || profile.getCity().toLowerCase().contains(m.getCity().toLowerCase())
+                            || m.getCity().toLowerCase().contains(profile.getCity().toLowerCase());
+                    dto.setIsNearby(matches);
+                }
+            }
+        }
+        return dto;
     }
 
     public CreatorProfileDto toDto(CreatorProfile profile) {

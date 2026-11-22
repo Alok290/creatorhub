@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Application, ApplicationStatus } from '../types';
 import { merchantService } from '../services/merchantService';
-import { X, CheckCircle, XCircle, Star, ExternalLink, MessageSquare } from 'lucide-react';
+import { X, CheckCircle, XCircle, Star, ExternalLink, MessageSquare, RotateCcw } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 
 interface ReviewApplicationModalProps {
@@ -36,6 +36,14 @@ export const ReviewApplicationModal: React.FC<ReviewApplicationModalProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRequestChanges = () => {
+    if (!feedback.trim()) {
+      setError('Please provide specific feedback or improvement instructions in the note above so the creator knows what to revise.');
+      return;
+    }
+    handleUpdateStatus('CHANGES_REQUESTED');
   };
 
   return (
@@ -110,11 +118,11 @@ export const ReviewApplicationModal: React.FC<ReviewApplicationModalProps> = ({
           {/* Feedback & Review Form */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-              Feedback / Note to Creator
+              Feedback / Note to Creator {application.status === 'DELIVERABLES_SUBMITTED' && <span className="text-slate-400 font-normal">(Required if requesting improvements)</span>}
             </label>
             <textarea
               rows={2}
-              placeholder="Add feedback or instructions for the creator..."
+              placeholder="Add feedback or specific improvement instructions for the creator..."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -147,7 +155,7 @@ export const ReviewApplicationModal: React.FC<ReviewApplicationModalProps> = ({
         </div>
 
         {/* Modal Action Buttons based on status */}
-        <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap gap-2 justify-end">
+        <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap gap-2 justify-end items-center">
           <button
             type="button"
             onClick={onClose}
@@ -179,20 +187,32 @@ export const ReviewApplicationModal: React.FC<ReviewApplicationModalProps> = ({
             </>
           )}
 
-          {application.status === 'DELIVERABLES_SUBMITTED' && (
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => handleUpdateStatus('COMPLETED')}
-              className="inline-flex items-center px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm"
-            >
-              <CheckCircle className="w-3.5 h-3.5 mr-1" />
-              Approve & Complete Deal
-            </button>
+          {(application.status === 'DELIVERABLES_SUBMITTED' || application.status === 'CHANGES_REQUESTED') && (
+            <>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleRequestChanges}
+                className="inline-flex items-center px-4 py-2 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl transition-colors shadow-2xs"
+                title="Send revision feedback to creator"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
+                Ask for Improvement
+              </button>
+
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleUpdateStatus('COMPLETED')}
+                className="inline-flex items-center px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm"
+              >
+                <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                Approve & Complete Deal
+              </button>
+            </>
           )}
         </div>
       </div>
     </div>
   );
 };
-

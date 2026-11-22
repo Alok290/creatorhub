@@ -28,15 +28,15 @@ export const MerchantCampaigns: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <span className="text-xs font-bold text-brand-600 uppercase tracking-wider">Campaign Hub</span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">My Posted Campaigns</h1>
+          <span className="text-xs font-bold text-brand-600 uppercase tracking-wider">Collab Hub</span>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">My Collabs</h1>
           <p className="text-sm text-slate-500 mt-1">Manage deliverables, view creator applicants, and track active collaborations.</p>
         </div>
         <Link
           to="/merchant/campaigns/new"
-          className="inline-flex items-center px-4 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm transition-all hover:scale-105"
+          className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm transition-all hover:scale-105"
         >
-          <PlusCircle className="w-4 h-4 mr-1.5" /> Post New Campaign
+          <PlusCircle className="w-4 h-4 mr-1.5" /> Post a Collab
         </Link>
       </div>
 
@@ -47,13 +47,13 @@ export const MerchantCampaigns: React.FC = () => {
       ) : campaigns.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
           <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800">You haven't posted any campaigns yet</h3>
-          <p className="text-xs text-slate-400 mt-1 mb-4">Post a campaign to start receiving proposals from verified creators.</p>
+          <h3 className="text-base font-bold text-slate-800">You haven't posted any collabs yet</h3>
+          <p className="text-xs text-slate-400 mt-1 mb-4">Post a collab to start receiving proposals from verified creators.</p>
           <Link
             to="/merchant/campaigns/new"
             className="inline-flex items-center px-5 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl"
           >
-            Create Your First Campaign
+            Post Your First Collab
           </Link>
         </div>
       ) : (

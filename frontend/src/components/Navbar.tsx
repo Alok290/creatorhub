@@ -1,15 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles, Menu, X, User, LogOut, PlusCircle, Compass, LayoutDashboard, Briefcase, Users } from 'lucide-react';
+import { chatService } from '../services/chatService';
+import { NotificationBell } from './NotificationBell';
+import { Sparkles, Menu, X, User, LogOut, PlusCircle, Compass, LayoutDashboard, Briefcase, Users, MessageSquare } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, role, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const navigate = useNavigate();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const checkUnread = async () => {
+      try {
+        const threads = await chatService.getThreads();
+        const total = threads.reduce((acc, t) => acc + (t.unreadCount || 0), 0);
+        setUnreadCount(total);
+      } catch {
+        // silent fail on network blip
+      }
+    };
+
+    checkUnread();
+    const interval = setInterval(checkUnread, 8000);
+    return () => clearInterval(interval);
+  }, [user, location.pathname]);
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200">
@@ -37,7 +61,7 @@ export const Navbar: React.FC = () => {
                     }`}
                   >
                     <Compass className="w-4 h-4 mr-1.5" />
-                    Explore Campaigns
+                    Explore Collabs
                   </Link>
                   <Link
                     to="/creators"
@@ -80,6 +104,20 @@ export const Navbar: React.FC = () => {
                     <Briefcase className="w-4 h-4 mr-1.5" />
                     My Applications
                   </Link>
+                  <Link
+                    to="/messages"
+                    className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/messages') ? 'text-brand-600 bg-brand-50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-1.5" />
+                    Messages
+                    {unreadCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white leading-none">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </Link>
                 </>
               )}
 
@@ -101,14 +139,14 @@ export const Navbar: React.FC = () => {
                     }`}
                   >
                     <Briefcase className="w-4 h-4 mr-1.5" />
-                    My Campaigns
+                    My Collabs
                   </Link>
                   <Link
                     to="/merchant/campaigns/new"
                     className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 transition-colors`}
                   >
                     <PlusCircle className="w-4 h-4 mr-1.5" />
-                    Post Campaign
+                    Post a Collab
                   </Link>
                   <Link
                     to="/merchant/creators"
@@ -119,6 +157,20 @@ export const Navbar: React.FC = () => {
                     <Users className="w-4 h-4 mr-1.5" />
                     Creator Directory
                   </Link>
+                  <Link
+                    to="/messages"
+                    className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/messages') ? 'text-brand-600 bg-brand-50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-1.5" />
+                    Messages
+                    {unreadCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white leading-none">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </Link>
                 </>
               )}
             </div>
@@ -128,6 +180,8 @@ export const Navbar: React.FC = () => {
           <div className="hidden md:flex md:items-center md:space-x-3">
             {user ? (
               <div className="flex items-center space-x-3">
+                <NotificationBell />
+
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                   {role === 'CREATOR' ? 'Creator Account' : 'Merchant Brand'}
                 </span>
@@ -168,8 +222,9 @@ export const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile hamburger */}
-          <div className="flex items-center md:hidden">
+          {/* Mobile header controls */}
+          <div className="flex items-center space-x-1 md:hidden">
+            {user && <NotificationBell />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
@@ -190,7 +245,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
               >
-                Explore Campaigns
+                Explore Collabs
               </Link>
               <Link
                 to="/creators"
@@ -242,6 +297,18 @@ export const Navbar: React.FC = () => {
                     My Applications
                   </Link>
                   <Link
+                    to="/messages"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <span>Messages</span>
+                    {unreadCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500 text-white">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                  <Link
                     to="/creator/profile"
                     onClick={() => setMobileMenuOpen(false)}
                     className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
@@ -263,14 +330,14 @@ export const Navbar: React.FC = () => {
                     onClick={() => setMobileMenuOpen(false)}
                     className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
                   >
-                    My Campaigns
+                    My Collabs
                   </Link>
                   <Link
                     to="/merchant/campaigns/new"
                     onClick={() => setMobileMenuOpen(false)}
                     className="block px-3 py-2 rounded-md text-base font-medium text-brand-600 hover:bg-brand-50"
                   >
-                    Post Campaign
+                    Post a Collab
                   </Link>
                   <Link
                     to="/merchant/creators"
@@ -278,6 +345,18 @@ export const Navbar: React.FC = () => {
                     className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
                   >
                     Creator Directory
+                  </Link>
+                  <Link
+                    to="/messages"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <span>Messages</span>
+                    {unreadCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500 text-white">
+                        {unreadCount}
+                      </span>
+                    )}
                   </Link>
                   <Link
                     to="/merchant/profile"

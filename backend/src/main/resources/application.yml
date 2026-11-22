@@ -5,16 +5,17 @@ spring:
   application:
     name: backend
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/creatorhub;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE}
-    username: ${DB_USER:sa}
-    password: ${DB_PASS:}
-    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/creatorhub?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USER:root}
+    password: ${DB_PASS:Alok123@}
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
   jpa:
     hibernate:
       ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
 jwt:
@@ -34,5 +35,3 @@ instagram:
   client-id: ${INSTAGRAM_CLIENT_ID:}
   client-secret: ${INSTAGRAM_CLIENT_SECRET:}
   redirect-uri: ${INSTAGRAM_REDIRECT_URI:http://localhost:5173/auth/callback/instagram}
-
-

@@ -22,6 +22,9 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
     case 'ESCROWED':
       color = 'bg-amber-50 text-amber-700 border-amber-200';
       break;
+    case 'CHANGES_REQUESTED':
+      color = 'bg-amber-100 text-amber-800 border-amber-300 font-bold';
+      break;
     case 'IN_PROGRESS':
     case 'DELIVERABLES_SUBMITTED':
       color = 'bg-blue-50 text-blue-700 border-blue-200';

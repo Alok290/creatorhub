@@ -52,8 +52,8 @@ export const CreatorExplore: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <div>
         <span className="text-xs font-bold text-brand-600 uppercase tracking-wider">Marketplace</span>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">Explore Open Brand Campaigns</h1>
-        <p className="text-sm text-slate-500 mt-1">Discover sponsorships, product launches, and local store tasting campaigns.</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">Explore Open Brand Collabs</h1>
+        <p className="text-sm text-slate-500 mt-1">Discover sponsorships, product launches, and local store tasting collabs.</p>
       </div>
 
       {/* Filter and Search Bar */}
@@ -117,7 +117,7 @@ export const CreatorExplore: React.FC = () => {
       ) : campaigns.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
           <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-700">No campaigns found</h3>
+          <h3 className="text-base font-bold text-slate-700">No open collabs found</h3>
           <p className="text-xs text-slate-400 mt-1">Try adjusting your search criteria or category filter.</p>
         </div>
       ) : (

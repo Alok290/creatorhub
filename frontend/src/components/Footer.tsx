@@ -34,7 +34,7 @@ export const Footer: React.FC = () => {
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">For Merchants</h3>
             <ul className="mt-4 space-y-2 text-sm text-slate-600">
               <li><Link to="/creators" className="hover:text-brand-600">Discover Creators</Link></li>
-              <li><Link to="/register" className="hover:text-brand-600">Post a Campaign</Link></li>
+              <li><Link to="/register" className="hover:text-brand-600">Post a Collab</Link></li>
               <li><Link to="/login" className="hover:text-brand-600">Brand Portal</Link></li>
             </ul>
           </div>

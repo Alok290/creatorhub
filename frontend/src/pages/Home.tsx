@@ -100,13 +100,13 @@ export const Home: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8">
           <div>
             <span className="text-xs font-semibold text-brand-600 uppercase tracking-wider">Marketplace Feed</span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">Active Brand Campaigns</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">Active Brand Collabs</h2>
           </div>
           <Link
             to="/explore"
             className="inline-flex items-center text-sm font-semibold text-brand-600 hover:text-brand-700 mt-2 sm:mt-0"
           >
-            Browse all campaigns <ArrowRight className="w-4 h-4 ml-1" />
+            Browse all collabs <ArrowRight className="w-4 h-4 ml-1" />
           </Link>
         </div>
 
@@ -118,7 +118,7 @@ export const Home: React.FC = () => {
           </div>
         ) : featuredCampaigns.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-            <p className="text-slate-500">No active campaigns right now. Check back shortly!</p>
+            <p className="text-slate-500">No active collabs right now. Check back shortly!</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

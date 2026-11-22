@@ -163,20 +163,37 @@ public class MerchantController {
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Long minFollowers,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false, defaultValue = "false") Boolean nearbyOnly
+            @RequestParam(required = false, defaultValue = "false") Boolean nearbyOnly,
+            @RequestParam(required = false, defaultValue = "10.0") Double radiusKm
     ) {
         String merchantPhone = userDetails != null ? userDetails.getUsername() : null;
         List<CreatorProfileDto> creators = creatorProfileService.searchCreatorsForMerchant(
-                merchantPhone, category, city, latitude, longitude, minFollowers, search, nearbyOnly
+                merchantPhone, category, city, latitude, longitude, minFollowers, search, nearbyOnly, radiusKm
         );
         return ResponseEntity.ok(ApiResponse.success(creators, "Creators retrieved"));
     }
 
     @GetMapping("/creators/{userId}")
     public ResponseEntity<ApiResponse<CreatorProfileDto>> getCreatorProfile(
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long userId
     ) {
-        CreatorProfileDto creator = creatorProfileService.getPublicCreatorProfile(userId);
+        String merchantPhone = userDetails != null ? userDetails.getUsername() : null;
+        CreatorProfileDto creator = creatorProfileService.getPublicCreatorProfileForMerchant(merchantPhone, userId);
         return ResponseEntity.ok(ApiResponse.success(creator, "Creator details retrieved"));
+    }
+
+    @PostMapping("/creators/{userId}/invite")
+    public ResponseEntity<ApiResponse<ApplicationResponseDto>> inviteCreator(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long userId,
+            @RequestParam Long campaignId,
+            @RequestParam(required = false) Double proposedRate,
+            @RequestParam(required = false) String message
+    ) {
+        ApplicationResponseDto app = applicationService.inviteCreator(
+                userDetails.getUsername(), campaignId, userId, proposedRate, message
+        );
+        return ResponseEntity.ok(ApiResponse.success(app, "Direct collaboration invitation sent!"));
     }
 }

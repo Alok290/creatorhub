@@ -23,6 +23,7 @@ public class ApplicationService {
     private final UserRepository userRepository;
     private final CreatorProfileRepository creatorProfileRepository;
     private final MerchantProfileRepository merchantProfileRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public ApplicationResponseDto apply(String creatorPhone, Long campaignId, ApplicationRequestDto req) {
@@ -54,6 +55,64 @@ public class ApplicationService {
                 .build();
 
         Application saved = applicationRepository.save(application);
+
+        CreatorProfile cProfile = creatorProfileRepository.findByUserId(creator.getId()).orElse(null);
+        String creatorName = cProfile != null && cProfile.getDisplayName() != null ? cProfile.getDisplayName() : "A creator";
+        notificationService.sendNotification(
+                campaign.getMerchant(),
+                creator,
+                "New Collab Proposal!",
+                creatorName + " applied to your collab '" + campaign.getTitle() + "' with proposed fee ₹" + (saved.getProposedRate() != null ? saved.getProposedRate() : 0),
+                NotificationType.APPLICATION_RECEIVED,
+                saved.getId(),
+                "/merchant/campaigns/" + campaign.getId()
+        );
+
+        return toDto(saved);
+    }
+
+    @Transactional
+    public ApplicationResponseDto inviteCreator(String merchantPhone, Long campaignId, Long creatorUserId, Double proposedRate, String message) {
+        User merchant = userRepository.findByPhone(merchantPhone)
+                .orElseThrow(() -> new UsernameNotFoundException("Merchant not found: " + merchantPhone));
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new IllegalArgumentException("Campaign not found: " + campaignId));
+
+        if (!campaign.getMerchant().getId().equals(merchant.getId())) {
+            throw new AccessDeniedException("You do not own this collab");
+        }
+
+        User creator = userRepository.findById(creatorUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Creator not found with user id: " + creatorUserId));
+
+        if (applicationRepository.existsByCampaignIdAndCreatorId(campaignId, creator.getId())) {
+            throw new IllegalArgumentException("An application or invitation already exists for this creator on this collab");
+        }
+
+        Application application = Application.builder()
+                .campaign(campaign)
+                .creator(creator)
+                .pitch(message != null && !message.isBlank() ? "Merchant Direct Invitation: " + message : "Direct collaboration invitation from " + campaign.getMerchant().getPhone())
+                .proposedRate(proposedRate != null ? proposedRate : campaign.getBudget())
+                .status(ApplicationStatus.ACCEPTED)
+                .paymentStatus(PaymentStatus.PENDING)
+                .build();
+
+        Application saved = applicationRepository.save(application);
+
+        MerchantProfile mProfile = merchantProfileRepository.findByUserId(merchant.getId()).orElse(null);
+        String brandName = mProfile != null && mProfile.getBrandName() != null ? mProfile.getBrandName() : "A brand partner";
+        notificationService.sendNotification(
+                creator,
+                merchant,
+                "Collab Invitation 🤝",
+                brandName + " invited you to collaborate on '" + campaign.getTitle() + "'" + (proposedRate != null ? " with offer ₹" + proposedRate : ""),
+                NotificationType.COLLAB_INVITE,
+                saved.getId(),
+                "/creator/applications"
+        );
+
         return toDto(saved);
     }
 
@@ -109,6 +168,56 @@ public class ApplicationService {
         }
 
         Application saved = applicationRepository.save(application);
+
+        MerchantProfile mProfile = merchantProfileRepository.findByUserId(application.getCampaign().getMerchant().getId()).orElse(null);
+        String brandName = mProfile != null && mProfile.getBrandName() != null ? mProfile.getBrandName() : "Brand";
+
+        if (req.getStatus() == ApplicationStatus.ACCEPTED) {
+            notificationService.sendNotification(
+                    application.getCreator(),
+                    application.getCampaign().getMerchant(),
+                    "Proposal Accepted! 🎉",
+                    brandName + " accepted your proposal for '" + application.getCampaign().getTitle() + "'. You can now coordinate deliverables!",
+                    NotificationType.APPLICATION_ACCEPTED,
+                    application.getId(),
+                    "/creator/applications"
+            );
+        } else if (req.getStatus() == ApplicationStatus.REJECTED) {
+            notificationService.sendNotification(
+                    application.getCreator(),
+                    application.getCampaign().getMerchant(),
+                    "Proposal Update",
+                    brandName + " declined your proposal for '" + application.getCampaign().getTitle() + "'.",
+                    NotificationType.APPLICATION_REJECTED,
+                    application.getId(),
+                    "/creator/applications"
+            );
+        } else if (req.getStatus() == ApplicationStatus.CHANGES_REQUESTED) {
+            String feedbackNote = req.getFeedback() != null && !req.getFeedback().isBlank()
+                    ? ": \"" + (req.getFeedback().length() > 60 ? req.getFeedback().substring(0, 57) + "..." : req.getFeedback()) + "\""
+                    : ". Please check feedback instructions and submit revised proof.";
+            notificationService.sendNotification(
+                    application.getCreator(),
+                    application.getCampaign().getMerchant(),
+                    "Revisions Requested ⚠️",
+                    brandName + " requested improvements for '" + application.getCampaign().getTitle() + "'" + feedbackNote,
+                    NotificationType.CHANGES_REQUESTED,
+                    application.getId(),
+                    "/creator/applications"
+            );
+        } else if (req.getStatus() == ApplicationStatus.COMPLETED) {
+            String starTxt = req.getRating() != null ? " and rated your work " + req.getRating() + " stars!" : "!";
+            notificationService.sendNotification(
+                    application.getCreator(),
+                    application.getCampaign().getMerchant(),
+                    "Deal Completed & Rated ⭐",
+                    brandName + " approved your post proof and marked the collab completed" + starTxt,
+                    NotificationType.COLLAB_COMPLETED,
+                    application.getId(),
+                    "/creator/applications"
+            );
+        }
+
         return toDto(saved);
     }
 
@@ -121,11 +230,26 @@ public class ApplicationService {
             throw new AccessDeniedException("Not authorized to submit deliverables for this application");
         }
 
+        boolean isRevision = application.getStatus() == ApplicationStatus.CHANGES_REQUESTED;
         application.setDeliverableUrl(req.getDeliverableUrl());
         application.setDeliverableNotes(req.getDeliverableNotes());
         application.setStatus(ApplicationStatus.DELIVERABLES_SUBMITTED);
 
         Application saved = applicationRepository.save(application);
+
+        CreatorProfile cProfile = creatorProfileRepository.findByUserId(application.getCreator().getId()).orElse(null);
+        String creatorName = cProfile != null && cProfile.getDisplayName() != null ? cProfile.getDisplayName() : "Creator";
+
+        notificationService.sendNotification(
+                application.getCampaign().getMerchant(),
+                application.getCreator(),
+                isRevision ? "Revised Deliverables Submitted 📸" : "Deliverables Submitted 📸",
+                creatorName + (isRevision ? " submitted revised proof for '" : " submitted post proof for '") + application.getCampaign().getTitle() + "'. Review the link and approve.",
+                NotificationType.DELIVERABLES_SUBMITTED,
+                application.getId(),
+                "/merchant/campaigns/" + application.getCampaign().getId()
+        );
+
         return toDto(saved);
     }
 

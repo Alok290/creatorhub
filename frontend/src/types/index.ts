@@ -72,7 +72,7 @@ export interface MerchantProfile {
 
 export type CompensationType = 'PAID' | 'BARTER' | 'HYBRID';
 export type CampaignStatus = 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CLOSED';
-export type ApplicationStatus = 'APPLIED' | 'ACCEPTED' | 'REJECTED' | 'IN_PROGRESS' | 'DELIVERABLES_SUBMITTED' | 'COMPLETED' | 'CANCELLED';
+export type ApplicationStatus = 'APPLIED' | 'ACCEPTED' | 'REJECTED' | 'IN_PROGRESS' | 'DELIVERABLES_SUBMITTED' | 'CHANGES_REQUESTED' | 'COMPLETED' | 'CANCELLED';
 export type PaymentStatus = 'PENDING' | 'ESCROWED' | 'PAID' | 'REFUNDED';
 
 export interface Campaign {
@@ -130,5 +130,58 @@ export interface Application {
   rating?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  applicationId: number;
+  senderId: number;
+  senderName: string;
+  senderRole: 'CREATOR' | 'MERCHANT' | 'ADMIN';
+  senderAvatarUrl?: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  isMine: boolean;
+}
+
+export interface ChatThread {
+  applicationId: number;
+  campaignId: number;
+  campaignTitle: string;
+  partnerName: string;
+  partnerAvatarUrl?: string;
+  partnerRole: string;
+  partnerPhone: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  unreadCount: number;
+  status: ApplicationStatus;
+}
+
+export type NotificationType =
+  | 'COLLAB_INVITE'
+  | 'APPLICATION_RECEIVED'
+  | 'APPLICATION_ACCEPTED'
+  | 'APPLICATION_REJECTED'
+  | 'DELIVERABLES_SUBMITTED'
+  | 'CHANGES_REQUESTED'
+  | 'COLLAB_COMPLETED'
+  | 'CHAT_MESSAGE'
+  | 'SYSTEM';
+
+export interface NotificationItem {
+  id: number;
+  recipientId: number;
+  senderId?: number;
+  senderName?: string;
+  senderAvatarUrl?: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  referenceId?: number;
+  linkUrl: string;
+  isRead: boolean;
+  createdAt: string;
 }
 

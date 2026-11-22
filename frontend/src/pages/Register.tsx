@@ -48,7 +48,7 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-[80vh] flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <Link to="/" className="inline-flex items-center space-x-2">
           <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md">
@@ -62,7 +62,7 @@ export const Register: React.FC = () => {
           Create your account
         </h2>
         <p className="mt-2 text-sm text-slate-500">
-          Start collaborating on brand campaigns in minutes
+          Start collaborating on brand collabs in minutes
         </p>
       </div>
 
@@ -73,7 +73,7 @@ export const Register: React.FC = () => {
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2 text-center">
               I want to join as:
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setRole('CREATOR')}
