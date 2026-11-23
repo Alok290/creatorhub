@@ -9,5 +9,8 @@ public enum NotificationType {
     CHANGES_REQUESTED,
     COLLAB_COMPLETED,
     CHAT_MESSAGE,
+    FUNDS_ESCROWED,
+    FUNDS_RELEASED,
+    PAYOUT_PROCESSED,
     SYSTEM
 }

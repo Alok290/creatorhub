@@ -6,7 +6,8 @@ import { merchantService } from '../services/merchantService';
 import { StatusBadge } from '../components/StatusBadge';
 import { ReviewApplicationModal } from '../components/ReviewApplicationModal';
 import { CollabChatModal } from '../components/CollabChatModal';
-import { ArrowLeft, Users, Briefcase, MapPin, DollarSign, Calendar, MessageSquare, CheckCircle, ExternalLink } from 'lucide-react';
+import { EscrowDepositModal } from '../components/EscrowDepositModal';
+import { ArrowLeft, Users, Briefcase, MapPin, DollarSign, Calendar, MessageSquare, CheckCircle, ExternalLink, ShieldCheck, Lock, AlertCircle } from 'lucide-react';
 
 export const MerchantCampaignDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ export const MerchantCampaignDetail: React.FC = () => {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [activeChatApp, setActiveChatApp] = useState<Application | null>(null);
+  const [escrowApp, setEscrowApp] = useState<Application | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -128,7 +130,22 @@ export const MerchantCampaignDetail: React.FC = () => {
                         {app.creatorCity || 'India'} • {(app.creatorTotalFollowers || 0).toLocaleString()} followers
                       </p>
                     </div>
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center space-x-2">
+                      {app.status === 'ACCEPTED' && app.paymentStatus === 'PENDING' && (
+                        <span className="inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
+                          <AlertCircle className="w-3 h-3 mr-1 text-amber-600" /> Escrow Unfunded
+                        </span>
+                      )}
+                      {(app.paymentStatus === 'ESCROWED' || app.status === 'DELIVERABLES_SUBMITTED' || app.status === 'CHANGES_REQUESTED') && app.status !== 'COMPLETED' && (
+                        <span className="inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                          <Lock className="w-3 h-3 mr-1 text-emerald-600" /> Escrow Locked
+                        </span>
+                      )}
+                      {app.status === 'COMPLETED' && (
+                        <span className="inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                          <CheckCircle className="w-3 h-3 mr-1 text-blue-600" /> Funds Disbursed
+                        </span>
+                      )}
                       <StatusBadge status={app.status} />
                     </div>
                   </div>
@@ -155,6 +172,16 @@ export const MerchantCampaignDetail: React.FC = () => {
                   </div>
 
                   <div className="flex items-center space-x-2">
+                    {app.status === 'ACCEPTED' && (!app.paymentStatus || app.paymentStatus === 'PENDING') && (
+                      <button
+                        type="button"
+                        onClick={() => setEscrowApp(app)}
+                        className="px-3 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-sm shadow-indigo-500/20 inline-flex items-center"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5 mr-1" />
+                        Deposit Escrow
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setActiveChatApp(app)}
@@ -185,6 +212,17 @@ export const MerchantCampaignDetail: React.FC = () => {
         application={selectedApp}
         isOpen={isReviewOpen}
         onClose={() => setIsReviewOpen(false)}
+        onDepositEscrow={(app) => setEscrowApp(app)}
+        onSuccess={() => {
+          loadData();
+        }}
+      />
+
+      {/* Escrow Deposit Modal */}
+      <EscrowDepositModal
+        application={escrowApp}
+        isOpen={!!escrowApp}
+        onClose={() => setEscrowApp(null)}
         onSuccess={() => {
           loadData();
         }}

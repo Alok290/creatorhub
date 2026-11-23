@@ -168,6 +168,9 @@ export type NotificationType =
   | 'CHANGES_REQUESTED'
   | 'COLLAB_COMPLETED'
   | 'CHAT_MESSAGE'
+  | 'FUNDS_ESCROWED'
+  | 'FUNDS_RELEASED'
+  | 'PAYOUT_PROCESSED'
   | 'SYSTEM';
 
 export interface NotificationItem {
@@ -183,5 +186,68 @@ export interface NotificationItem {
   linkUrl: string;
   isRead: boolean;
   createdAt: string;
+}
+
+export type PayoutMethod = 'UPI' | 'BANK_TRANSFER';
+export type PayoutStatus = 'REQUESTED' | 'PROCESSING' | 'TRANSFERRED' | 'FAILED';
+
+export interface Payment {
+  id: number;
+  transactionId: string;
+  applicationId: number;
+  campaignTitle: string;
+  payerId: number;
+  payerName: string;
+  recipientId: number;
+  recipientName: string;
+  grossAmount: number;
+  platformFee: number;
+  netAmount: number;
+  currency: string;
+  gatewayName: string;
+  gatewayPaymentId?: string;
+  status: PaymentStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PayoutRequest {
+  id: number;
+  creatorId: number;
+  amount: number;
+  payoutMethod: PayoutMethod;
+  upiId?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  accountHolderName?: string;
+  status: PayoutStatus;
+  utrNumber?: string;
+  processedAt: string;
+  createdAt: string;
+}
+
+export interface CreatorWallet {
+  lifetimeEarnings: number;
+  inEscrow: number;
+  totalWithdrawn: number;
+  availableBalance: number;
+  recentEscrowDeals: Payment[];
+  recentPayouts: PayoutRequest[];
+}
+
+export interface PaymentOrderResponse {
+  keyId: string;
+  orderId: string;
+  transactionId: string;
+  applicationId: number;
+  collabTitle: string;
+  creatorName: string;
+  grossAmount: number;
+  platformFee: number;
+  netAmount: number;
+  currency: string;
+  brandName: string;
+  userPhone: string;
+  userEmail: string;
 }
 

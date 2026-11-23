@@ -25,6 +25,13 @@ jwt:
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}
 
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:rzp_test_placeholder_key}
+  key-secret: ${RAZORPAY_KEY_SECRET:SecretKeyCreatorHub2026Secure}
+
+platform:
+  fee-percentage: ${PLATFORM_FEE_PERCENTAGE:5.0}
+
 instagram:
   # Instagram API with Unified Login (Meta Dashboard -> Instagram API -> API setup with Unified login)
   config-id: ${INSTAGRAM_CONFIG_ID:}

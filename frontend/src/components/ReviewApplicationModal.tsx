@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Application, ApplicationStatus } from '../types';
 import { merchantService } from '../services/merchantService';
-import { X, CheckCircle, XCircle, Star, ExternalLink, MessageSquare, RotateCcw } from 'lucide-react';
+import { X, CheckCircle, XCircle, Star, ExternalLink, MessageSquare, RotateCcw, ShieldCheck, Lock, AlertCircle } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 
 interface ReviewApplicationModalProps {
@@ -9,6 +9,7 @@ interface ReviewApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onDepositEscrow?: (application: Application) => void;
 }
 
 export const ReviewApplicationModal: React.FC<ReviewApplicationModalProps> = ({
@@ -16,6 +17,7 @@ export const ReviewApplicationModal: React.FC<ReviewApplicationModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  onDepositEscrow,
 }) => {
   if (!isOpen || !application) return null;
 
@@ -115,6 +117,31 @@ export const ReviewApplicationModal: React.FC<ReviewApplicationModalProps> = ({
             </div>
           )}
 
+          {/* Escrow Vault Protection Notice */}
+          {application.status === 'ACCEPTED' && (!application.paymentStatus || application.paymentStatus === 'PENDING') && (
+            <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+              <div className="flex items-center font-bold text-amber-800">
+                <AlertCircle className="w-4 h-4 mr-1 text-amber-600" />
+                Escrow Vault Deposit Needed
+              </div>
+              <p className="text-[11px] text-amber-700 leading-relaxed">
+                Proposal accepted! Please deposit ₹{application.proposedRate?.toLocaleString()} into the escrow vault to fund this collab. Funds remain protected until you review and approve the submitted content.
+              </p>
+            </div>
+          )}
+
+          {application.paymentStatus === 'ESCROWED' && application.status !== 'COMPLETED' && (
+            <div className="p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1">
+              <div className="flex items-center font-bold text-emerald-800">
+                <Lock className="w-4 h-4 mr-1 text-emerald-600" />
+                ₹{application.proposedRate?.toLocaleString()} Secured in Escrow Vault
+              </div>
+              <p className="text-[11px] text-emerald-700 leading-relaxed">
+                Payment is safely held in the platform vault. Creator cannot withdraw until you approve deliverables.
+              </p>
+            </div>
+          )}
+
           {/* Feedback & Review Form */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
@@ -184,6 +211,24 @@ export const ReviewApplicationModal: React.FC<ReviewApplicationModalProps> = ({
                 <CheckCircle className="w-3.5 h-3.5 mr-1" />
                 Accept Proposal
               </button>
+            </>
+          )}
+
+          {application.status === 'ACCEPTED' && (
+            <>
+              {(!application.paymentStatus || application.paymentStatus === 'PENDING') && onDepositEscrow && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onDepositEscrow(application);
+                  }}
+                  className="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] rounded-xl shadow-md shadow-indigo-500/20 transition-all"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+                  Deposit Escrow (₹{application.proposedRate?.toLocaleString()})
+                </button>
+              )}
             </>
           )}
 

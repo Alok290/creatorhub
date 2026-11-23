@@ -24,6 +24,7 @@ public class ApplicationService {
     private final CreatorProfileRepository creatorProfileRepository;
     private final MerchantProfileRepository merchantProfileRepository;
     private final NotificationService notificationService;
+    private final PaymentRepository paymentRepository;
 
     @Transactional
     public ApplicationResponseDto apply(String creatorPhone, Long campaignId, ApplicationRequestDto req) {
@@ -216,6 +217,23 @@ public class ApplicationService {
                     application.getId(),
                     "/creator/applications"
             );
+
+            // Release escrow payment if held in vault
+            paymentRepository.findByApplicationId(application.getId()).ifPresent(p -> {
+                if (p.getStatus() == PaymentStatus.ESCROWED) {
+                    p.setStatus(PaymentStatus.PAID);
+                    paymentRepository.save(p);
+                    notificationService.sendNotification(
+                            application.getCreator(),
+                            application.getCampaign().getMerchant(),
+                            "Payment Released! 💰",
+                            "₹" + p.getNetAmount() + " from '" + application.getCampaign().getTitle() + "' has been released to your Creator Wallet. Ready to withdraw to UPI!",
+                            NotificationType.FUNDS_RELEASED,
+                            application.getId(),
+                            "/creator/dashboard"
+                    );
+                }
+            });
         }
 
         return toDto(saved);

@@ -4,7 +4,7 @@ import { creatorService } from '../services/creatorService';
 import { StatusBadge } from '../components/StatusBadge';
 import { SubmitDeliverableModal } from '../components/SubmitDeliverableModal';
 import { CollabChatModal } from '../components/CollabChatModal';
-import { Briefcase, ExternalLink, MessageSquare, Star, UploadCloud, Clock, CheckCircle, RotateCcw } from 'lucide-react';
+import { Briefcase, ExternalLink, MessageSquare, Star, UploadCloud, Clock, CheckCircle, RotateCcw, Lock, AlertCircle, ShieldCheck } from 'lucide-react';
 
 export const CreatorApplications: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -88,9 +88,24 @@ export const CreatorApplications: React.FC = () => {
               className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:border-slate-300 transition-all flex flex-col md:flex-row justify-between gap-6"
             >
               <div className="space-y-3 flex-1">
-                <div className="flex items-center space-x-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-base font-bold text-slate-900">{app.campaignTitle}</h3>
                   <StatusBadge status={app.status} />
+                  {app.status === 'ACCEPTED' && (!app.paymentStatus || app.paymentStatus === 'PENDING') && (
+                    <span className="inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
+                      <AlertCircle className="w-3 h-3 mr-1 text-amber-600" /> Awaiting Brand Escrow Deposit
+                    </span>
+                  )}
+                  {(app.paymentStatus === 'ESCROWED' || app.status === 'DELIVERABLES_SUBMITTED' || app.status === 'CHANGES_REQUESTED') && app.status !== 'COMPLETED' && (
+                    <span className="inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                      <Lock className="w-3 h-3 mr-1 text-emerald-600" /> ₹{app.proposedRate?.toLocaleString()} Escrow Secured
+                    </span>
+                  )}
+                  {app.status === 'COMPLETED' && (
+                    <span className="inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                      <CheckCircle className="w-3 h-3 mr-1 text-blue-600" /> ₹{app.proposedRate?.toLocaleString()} In Your Wallet
+                    </span>
+                  )}
                 </div>
 
                 <p className="text-xs text-slate-500">
