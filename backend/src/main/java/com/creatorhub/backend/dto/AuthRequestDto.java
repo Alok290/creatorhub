@@ -20,5 +20,9 @@ public class AuthRequestDto {
     private String otpOrPassword;
 
     private String email;
+
+    private String brandName;
+
+    private String displayName;
 }
 

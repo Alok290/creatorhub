@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { merchantService } from '../services/merchantService';
 import { Application, Campaign, MerchantProfile } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
-import { PlusCircle, Briefcase, Users, Clock, CheckCircle, ArrowRight, Store, MapPin, Sparkles } from 'lucide-react';
+import { PlusCircle, Briefcase, Users, Clock, CheckCircle, ArrowRight, Store, MapPin, Sparkles, Edit3 } from 'lucide-react';
 
 export const MerchantDashboard: React.FC = () => {
   const [data, setData] = useState<{
@@ -58,7 +58,16 @@ export const MerchantDashboard: React.FC = () => {
             <div className="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full bg-white/10 mb-1">
               <Store className="w-3 h-3 mr-1 text-indigo-400" /> Verified Merchant Account
             </div>
-            <h1 className="text-2xl font-black">{profile?.brandName || 'Brand Dashboard'}</h1>
+            <div className="flex items-center space-x-3">
+              <h1 className="text-2xl font-black">{profile?.brandName || 'Brand Dashboard'}</h1>
+              <Link
+                to="/merchant/profile"
+                className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm"
+                title="Change Brand Name, Company, City & Logo"
+              >
+                <Edit3 className="w-3.5 h-3.5 mr-1 text-indigo-300" /> Edit Brand
+              </Link>
+            </div>
             <p className="text-xs text-white/70 mt-0.5 flex items-center">
               <MapPin className="w-3 h-3 mr-1" /> {profile?.city || 'City not set'} • {profile?.industry || 'Retail & Commerce'}
             </p>

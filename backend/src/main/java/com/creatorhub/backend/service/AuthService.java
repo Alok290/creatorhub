@@ -3,8 +3,12 @@ package com.creatorhub.backend.service;
 import com.creatorhub.backend.dto.AuthRequestDto;
 import com.creatorhub.backend.dto.AuthResponseDto;
 import com.creatorhub.backend.dto.UserResponseDto;
+import com.creatorhub.backend.entity.CreatorProfile;
+import com.creatorhub.backend.entity.MerchantProfile;
 import com.creatorhub.backend.entity.Role;
 import com.creatorhub.backend.entity.User;
+import com.creatorhub.backend.repository.CreatorProfileRepository;
+import com.creatorhub.backend.repository.MerchantProfileRepository;
 import com.creatorhub.backend.repository.UserRepository;
 import com.creatorhub.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final MerchantProfileRepository merchantProfileRepository;
+    private final CreatorProfileRepository creatorProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -44,6 +50,25 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        // Automatically initialize profile with Brand Name or Creator Name if provided
+        if (assignedRole == Role.MERCHANT) {
+            String brand = (request.getBrandName() != null && !request.getBrandName().isBlank())
+                    ? request.getBrandName().trim()
+                    : "Brand " + savedUser.getId();
+            MerchantProfile merchantProfile = MerchantProfile.builder()
+                    .user(savedUser)
+                    .brandName(brand)
+                    .companyName(brand)
+                    .build();
+            merchantProfileRepository.save(merchantProfile);
+        } else if (assignedRole == Role.CREATOR && request.getDisplayName() != null && !request.getDisplayName().isBlank()) {
+            CreatorProfile creatorProfile = CreatorProfile.builder()
+                    .user(savedUser)
+                    .displayName(request.getDisplayName().trim())
+                    .build();
+            creatorProfileRepository.save(creatorProfile);
+        }
         String token = jwtService.generateToken(savedUser);
 
         return AuthResponseDto.builder()

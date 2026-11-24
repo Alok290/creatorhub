@@ -8,8 +8,22 @@ export const authService = {
     return data;
   },
 
-  async register(phone: string, role: string, otpOrPassword?: string, email?: string): Promise<AuthResponse> {
-    const data = await api.post<AuthResponse>('/auth/register', { phone, role, otpOrPassword, email });
+  async register(
+    phone: string,
+    role: string,
+    otpOrPassword?: string,
+    email?: string,
+    brandName?: string,
+    displayName?: string
+  ): Promise<AuthResponse> {
+    const data = await api.post<AuthResponse>('/auth/register', {
+      phone,
+      role,
+      otpOrPassword,
+      email,
+      brandName,
+      displayName,
+    });
     localStorage.setItem('creatorhub_token', data.token);
     return data;
   },

@@ -16,6 +16,8 @@ export const Register: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [brandName, setBrandName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInstagramModalOpen, setIsInstagramModalOpen] = useState(false);
@@ -26,12 +28,23 @@ export const Register: React.FC = () => {
       setError('Please provide phone number and password');
       return;
     }
+    if (role === 'MERCHANT' && !brandName.trim()) {
+      setError('Please provide your Brand or Business name');
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-      await register(phone, role, password, email || undefined);
+      await register(
+        phone,
+        role,
+        password,
+        email || undefined,
+        role === 'MERCHANT' ? brandName.trim() : undefined,
+        role === 'CREATOR' ? displayName.trim() || undefined : undefined
+      );
       const saved = localStorage.getItem('creatorhub_user');
       const user = saved ? JSON.parse(saved) : null;
       const userRole = user?.role ? String(user.role).replace(/^ROLE_/, '').toUpperCase() : role;
@@ -128,6 +141,45 @@ export const Register: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {role === 'MERCHANT' ? (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  Brand / Business Name *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Store className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Artisan Coffee, Nike Mumbai"
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  Creator Name / Display Name (Optional)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Sparkles className="w-4 h-4 text-brand-600" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Rohan Sharma"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                 Phone Number *

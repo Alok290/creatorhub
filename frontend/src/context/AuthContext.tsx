@@ -8,7 +8,14 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   login: (phone: string, otpOrPassword: string) => Promise<void>;
-  register: (phone: string, role: Role, otpOrPassword?: string, email?: string) => Promise<void>;
+  register: (
+    phone: string,
+    role: Role,
+    otpOrPassword?: string,
+    email?: string,
+    brandName?: string,
+    displayName?: string
+  ) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -56,8 +63,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('creatorhub_user', JSON.stringify(profile));
   };
 
-  const register = async (phone: string, selectedRole: Role, otpOrPassword?: string, email?: string) => {
-    const res = await authService.register(phone, selectedRole, otpOrPassword, email);
+  const register = async (
+    phone: string,
+    selectedRole: Role,
+    otpOrPassword?: string,
+    email?: string,
+    brandName?: string,
+    displayName?: string
+  ) => {
+    const res = await authService.register(phone, selectedRole, otpOrPassword, email, brandName, displayName);
     setToken(res.token);
     const profile = await authService.getCurrentUser();
     setUser(profile);
