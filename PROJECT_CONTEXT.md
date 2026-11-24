@@ -605,7 +605,14 @@ npm run dev -- --host
 - Starts on `http://localhost:5173`.
 - Vite proxies `/api` calls directly to `http://localhost:8080`.
 
-### 3. Verification Scripts (`scratch/`)
+### 3. Run with Docker Desktop (Single-Command Stack)
+```bash
+docker compose up --build
+```
+- Automatically builds and runs MySQL (3306), Spring Boot (8080), and React Nginx (5173).
+- Uses `maven:3.9-eclipse-temurin-21-alpine` pre-baked image to prevent container Maven Wrapper download failures.
+
+### 4. Verification Scripts (`scratch/`)
 - `test_chat_seen_ticks.ps1`: Tests end-to-end messaging, delivery double ticks, seen blue ticks, and thread aggregation.
 - `test_improvement_workflow.ps1`: Tests the complete revision loop: submission $\rightarrow$ "Ask for Improvement" $\rightarrow$ revision notification $\rightarrow$ re-submission $\rightarrow$ completion.
 
