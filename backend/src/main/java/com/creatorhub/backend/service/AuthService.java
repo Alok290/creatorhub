@@ -108,6 +108,11 @@ public class AuthService {
             throw new IllegalArgumentException("Please enter the 6-digit OTP code");
         }
 
+        // If phone is already verified, succeed immediately
+        if (verifiedPhones.contains(phone) || verifiedPhones.contains(rawTrimmed)) {
+            return true;
+        }
+
         OtpRecord record = otpStore.get(phone);
         if (record == null) {
             record = otpStore.get(rawTrimmed);
@@ -148,13 +153,13 @@ public class AuthService {
 
         // Check OTP Verification
         boolean isVerified = false;
-        if (request.getOtp() != null && !request.getOtp().isBlank()) {
-            verifyRegistrationOtp(rawPhone, request.getOtp());
-            isVerified = true;
-        } else if (verifiedPhones.contains(phone) || verifiedPhones.contains(rawPhone)) {
+        if (verifiedPhones.contains(phone) || verifiedPhones.contains(rawPhone)) {
             isVerified = true;
             verifiedPhones.remove(phone);
             verifiedPhones.remove(rawPhone);
+        } else if (request.getOtp() != null && !request.getOtp().isBlank()) {
+            verifyRegistrationOtp(rawPhone, request.getOtp());
+            isVerified = true;
         } else if (otpStore.containsKey(phone) || otpStore.containsKey(rawPhone)) {
             throw new IllegalArgumentException("Please verify your phone number with the 6-digit OTP to complete registration.");
         }
