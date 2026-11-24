@@ -14,7 +14,8 @@ interface AuthContextType {
     otpOrPassword?: string,
     email?: string,
     brandName?: string,
-    displayName?: string
+    displayName?: string,
+    otp?: string
   ) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -69,9 +70,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     otpOrPassword?: string,
     email?: string,
     brandName?: string,
-    displayName?: string
+    displayName?: string,
+    otp?: string
   ) => {
-    const res = await authService.register(phone, selectedRole, otpOrPassword, email, brandName, displayName);
+    const res = await authService.register(phone, selectedRole, otpOrPassword, email, brandName, displayName, otp);
     setToken(res.token);
     const profile = await authService.getCurrentUser();
     setUser(profile);

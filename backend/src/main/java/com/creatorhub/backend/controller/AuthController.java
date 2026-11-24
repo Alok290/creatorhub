@@ -22,12 +22,35 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+
+    @PostMapping("/send-otp")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> sendOtp(@RequestBody Map<String, String> request) {
+        String phone = request.get("phone");
+        if (phone == null || phone.isBlank()) {
+            throw new IllegalArgumentException("Phone number is required");
+        }
+        Map<String, Object> result = authService.sendRegistrationOtp(phone);
+        return ResponseEntity.ok(ApiResponse.success(result, "OTP sent successfully"));
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> verifyOtp(@RequestBody Map<String, String> request) {
+        String phone = request.get("phone");
+        String otp = request.get("otp");
+        if (phone == null || phone.isBlank() || otp == null || otp.isBlank()) {
+            throw new IllegalArgumentException("Phone number and OTP code are required");
+        }
+        boolean verified = authService.verifyRegistrationOtp(phone, otp);
+        return ResponseEntity.ok(ApiResponse.success(Map.of("verified", verified, "phone", phone), "Phone number verified successfully"));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponseDto>> register(@Valid @RequestBody AuthRequestDto request) {

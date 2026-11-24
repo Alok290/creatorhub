@@ -12,7 +12,10 @@ const CATEGORIES = [
   'Fashion & Beauty',
   'Travel & Lifestyle',
   'Entertainment & Gaming',
-  'Education & Career'
+  'Education & Career',
+  'Home Decor & Living',
+  'Pet Care & Animals',
+  'Other'
 ];
 
 export const MerchantCreateCampaign: React.FC = () => {
@@ -29,6 +32,8 @@ export const MerchantCreateCampaign: React.FC = () => {
     targetCity: '',
   });
 
+  const [selectedCategory, setSelectedCategory] = useState<string>('Food & Beverage');
+  const [customCategory, setCustomCategory] = useState<string>('');
   const [budgetInput, setBudgetInput] = useState<string>('');
   const [followersInput, setFollowersInput] = useState<string>('');
   const [detectingLocation, setDetectingLocation] = useState(false);
@@ -40,10 +45,12 @@ export const MerchantCreateCampaign: React.FC = () => {
     const loadMerchantProfile = async () => {
       try {
         const profile = await merchantService.getProfile();
+        const initialCat = profile.industry && CATEGORIES.includes(profile.industry) ? profile.industry : 'Food & Beverage';
+        setSelectedCategory(initialCat);
         setFormData((prev) => ({
           ...prev,
           targetCity: profile.city ? profile.city.trim() : '',
-          category: profile.industry && CATEGORIES.includes(profile.industry) ? profile.industry : prev.category,
+          category: initialCat,
         }));
       } catch (err) {
         console.warn('Could not auto-populate location from merchant profile:', err);
@@ -94,6 +101,12 @@ export const MerchantCreateCampaign: React.FC = () => {
       return;
     }
 
+    const finalCategory = selectedCategory === 'Other' ? (customCategory.trim() || 'Other') : selectedCategory;
+    if (selectedCategory === 'Other' && !customCategory.trim()) {
+      setError('Please specify your custom category.');
+      return;
+    }
+
     const parsedBudget = budgetInput ? Number(budgetInput) : 0;
     const parsedMinFollowers = followersInput ? Number(followersInput) : 0;
 
@@ -103,6 +116,7 @@ export const MerchantCreateCampaign: React.FC = () => {
     try {
       await campaignService.createCampaign({
         ...formData,
+        category: finalCategory,
         budget: parsedBudget,
         minFollowers: parsedMinFollowers,
       });
@@ -135,34 +149,92 @@ export const MerchantCreateCampaign: React.FC = () => {
 
           {/* Collab Title */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-              Collab Title *
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Collab Title / Campaign Headline *
+              </label>
+              <span className="text-[11px] text-slate-400 font-medium">Clear & descriptive name for creators</span>
+            </div>
+            <p className="text-xs text-slate-500 mb-2">
+              State what you are promoting and what the creator will do so interested creators click on your opportunity.
+            </p>
             <input
               type="text"
               required
-              placeholder="e.g. Weekend Menu Tasting & Instagram Reel"
+              placeholder="e.g. 60-Second Cafe Tasting Reel, Summer Fashion Lookbook, Tech Product Unboxing"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold"
+              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold"
             />
+            {/* Quick Suggestions / Inspiration Chips */}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] text-slate-400 font-medium mr-1">Quick ideas:</span>
+              {[
+                '🍽️ Weekend Cafe Menu Tasting Reel',
+                '👗 Summer Collection Lookbook',
+                '📱 Tech Gadget Unboxing & Review',
+                '✨ Store Visit & Reel Promotion',
+                '💪 Fitness Workout & Brand Tag',
+              ].map((idea) => (
+                <button
+                  key={idea}
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, title: idea }))}
+                  className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition-colors cursor-pointer border border-slate-200/60"
+                >
+                  {idea}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Category & Compensation Model */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
                 Category / Niche *
               </label>
+              <p className="text-xs text-slate-500 mb-2">
+                Choose the industry or select &quot;Other&quot; to specify your own custom niche.
+              </p>
               <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                value={selectedCategory}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedCategory(val);
+                  if (val !== 'Other') {
+                    setFormData((prev) => ({ ...prev, category: val }));
+                  }
+                }}
+                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white font-medium"
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
+
+              {/* Custom Category Input if "Other" is selected */}
+              {selectedCategory === 'Other' && (
+                <div className="mt-2.5 p-3 bg-brand-50/40 border border-brand-200 rounded-xl space-y-1">
+                  <label className="block text-xs font-semibold text-brand-700">
+                    Specify Your Custom Category / Niche *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Real Estate, Automotive, Parenting, Handmade Crafts..."
+                    value={customCategory}
+                    onChange={(e) => {
+                      setCustomCategory(e.target.value);
+                      setFormData((prev) => ({ ...prev, category: e.target.value }));
+                    }}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Creators matching this custom niche will see your collab.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>

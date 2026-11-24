@@ -24,5 +24,7 @@ public class AuthRequestDto {
     private String brandName;
 
     private String displayName;
+
+    private String otp;
 }
 

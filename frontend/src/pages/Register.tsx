@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 import { Role } from '../types';
-import { Sparkles, Phone, Lock, Mail, ArrowRight, Store, Zap, Check, Instagram } from 'lucide-react';
+import { Sparkles, Phone, Lock, Mail, ArrowRight, Store, Zap, Check, Instagram, ShieldCheck, KeyRound, CheckCircle2, RotateCw } from 'lucide-react';
 import { InstagramLoginModal } from '../components/InstagramLoginModal';
 
 export const Register: React.FC = () => {
@@ -22,6 +23,66 @@ export const Register: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isInstagramModalOpen, setIsInstagramModalOpen] = useState(false);
 
+  // OTP Verification state
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
+  const [generatedTestOtp, setGeneratedTestOtp] = useState<string | null>(null);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  const handleSendOtp = async () => {
+    if (!phone || phone.trim().length < 8) {
+      setError('Please enter a valid phone number (at least 8 digits) before requesting OTP');
+      return;
+    }
+    setError(null);
+    setOtpSending(true);
+    setOtpSuccessMessage(null);
+    try {
+      const res = await authService.sendOtp(phone.trim());
+      setOtpSent(true);
+      setOtpSuccessMessage(res.message || '6-digit OTP code sent successfully!');
+      if (res.otp) {
+        setGeneratedTestOtp(res.otp);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send OTP code');
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.trim().length < 6) {
+      setError('Please enter the 6-digit OTP code');
+      return;
+    }
+    setError(null);
+    setVerifyingOtp(true);
+    try {
+      await authService.verifyOtp(phone.trim(), otp.trim());
+      setIsPhoneVerified(true);
+      setOtpSuccessMessage('Phone number verified successfully!');
+    } catch (err: any) {
+      setError(err.message || 'Invalid or expired OTP code');
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  const handlePhoneChange = (val: string) => {
+    setPhone(val);
+    if (isPhoneVerified || otpSent) {
+      setIsPhoneVerified(false);
+      setOtpSent(false);
+      setOtp('');
+      setGeneratedTestOtp(null);
+      setOtpSuccessMessage(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone || !password) {
@@ -32,18 +93,23 @@ export const Register: React.FC = () => {
       setError('Please provide your Brand or Business name');
       return;
     }
+    if (!isPhoneVerified) {
+      setError('Please verify your phone number with the 6-digit OTP before completing registration');
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
       await register(
-        phone,
+        phone.trim(),
         role,
         password,
         email || undefined,
         role === 'MERCHANT' ? brandName.trim() : undefined,
-        role === 'CREATOR' ? displayName.trim() || undefined : undefined
+        role === 'CREATOR' ? displayName.trim() || undefined : undefined,
+        otp.trim() || undefined
       );
       const saved = localStorage.getItem('creatorhub_user');
       const user = saved ? JSON.parse(saved) : null;
@@ -181,23 +247,126 @@ export const Register: React.FC = () => {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                Phone Number *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <Phone className="w-4 h-4" />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Phone Number (Unique ID) *
+                </label>
+                {isPhoneVerified && (
+                  <span className="inline-flex items-center text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> Number Verified
+                  </span>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    disabled={isPhoneVerified}
+                    placeholder="e.g. +91 98765 43210"
+                    value={phone}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border font-medium ${
+                      isPhoneVerified
+                        ? 'border-emerald-200 bg-emerald-50/40 text-slate-900 cursor-not-allowed'
+                        : 'border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500'
+                    }`}
+                  />
+                  {isPhoneVerified && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-emerald-600">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                  )}
                 </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. +91 98765 43210"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
-                />
+
+                {!isPhoneVerified && (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={otpSending || !phone || phone.trim().length < 8}
+                    className="px-3.5 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-sm flex items-center whitespace-nowrap"
+                  >
+                    {otpSending ? (
+                      <RotateCw className="w-3.5 h-3.5 animate-spin mr-1" />
+                    ) : (
+                      <KeyRound className="w-3.5 h-3.5 mr-1" />
+                    )}
+                    <span>{otpSent ? 'Resend' : 'Send OTP'}</span>
+                  </button>
+                )}
+
+                {isPhoneVerified && (
+                  <button
+                    type="button"
+                    onClick={() => handlePhoneChange(phone)}
+                    className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl"
+                  >
+                    Change
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* OTP Verification Box */}
+            {otpSent && !isPhoneVerified && (
+              <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-3 animate-fade-in">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-indigo-950 flex items-center">
+                    <KeyRound className="w-3.5 h-3.5 mr-1 text-indigo-600" /> Enter 6-Digit OTP Code
+                  </span>
+                  <span className="text-[11px] text-indigo-600 font-medium">Valid for 5 mins</span>
+                </div>
+
+                {otpSuccessMessage && (
+                  <p className="text-[11px] text-indigo-700 font-medium">
+                    {otpSuccessMessage}
+                  </p>
+                )}
+
+                {/* Instant Testing Auto-Fill Chip */}
+                {generatedTestOtp && (
+                  <div className="p-2 bg-white rounded-xl border border-indigo-200 flex items-center justify-between text-xs">
+                    <span className="text-slate-600 text-[11px]">
+                      Test OTP: <strong className="text-indigo-600 font-mono text-sm tracking-wider">{generatedTestOtp}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setOtp(generatedTestOtp)}
+                      className="px-2 py-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                    >
+                      Auto-fill OTP
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="Enter 6-digit OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    className="flex-1 px-3 py-2 text-sm text-center tracking-widest font-mono font-bold rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={verifyingOtp || otp.length < 6}
+                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-all shadow-sm flex items-center"
+                  >
+                    {verifyingOtp ? (
+                      <RotateCw className="w-3.5 h-3.5 animate-spin mr-1" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 mr-1" />
+                    )}
+                    <span>Verify Code</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
