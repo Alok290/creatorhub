@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
@@ -23,14 +23,22 @@ export const Register: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isInstagramModalOpen, setIsInstagramModalOpen] = useState(false);
 
-  // OTP Verification state
+  // OTP Verification state (Production carrier SMS)
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
-  const [generatedTestOtp, setGeneratedTestOtp] = useState<string | null>(null);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    let timer: any;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleSendOtp = async () => {
     if (!phone || phone.trim().length < 8) {
@@ -43,10 +51,8 @@ export const Register: React.FC = () => {
     try {
       const res = await authService.sendOtp(phone.trim());
       setOtpSent(true);
-      setOtpSuccessMessage(res.message || '6-digit OTP code sent successfully!');
-      if (res.otp) {
-        setGeneratedTestOtp(res.otp);
-      }
+      setResendCooldown(30); // 30-second cooldown between carrier SMS dispatches
+      setOtpSuccessMessage(res.message || '6-digit OTP code sent via SMS to your mobile phone.');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP code');
     } finally {
@@ -56,7 +62,7 @@ export const Register: React.FC = () => {
 
   const handleVerifyOtp = async () => {
     if (!otp || otp.trim().length < 6) {
-      setError('Please enter the 6-digit OTP code');
+      setError('Please enter the 6-digit OTP code received via SMS');
       return;
     }
     setError(null);
@@ -78,7 +84,7 @@ export const Register: React.FC = () => {
       setIsPhoneVerified(false);
       setOtpSent(false);
       setOtp('');
-      setGeneratedTestOtp(null);
+      setResendCooldown(0);
       setOtpSuccessMessage(null);
     }
   };
@@ -286,7 +292,7 @@ export const Register: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleSendOtp}
-                    disabled={otpSending || !phone || phone.trim().length < 8}
+                    disabled={otpSending || resendCooldown > 0 || !phone || phone.trim().length < 8}
                     className="px-3.5 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-sm flex items-center whitespace-nowrap"
                   >
                     {otpSending ? (
@@ -294,7 +300,13 @@ export const Register: React.FC = () => {
                     ) : (
                       <KeyRound className="w-3.5 h-3.5 mr-1" />
                     )}
-                    <span>{otpSent ? 'Resend' : 'Send OTP'}</span>
+                    <span>
+                      {resendCooldown > 0
+                        ? `Resend in ${resendCooldown}s`
+                        : otpSent
+                        ? 'Resend OTP'
+                        : 'Send OTP'}
+                    </span>
                   </button>
                 )}
 
@@ -320,27 +332,9 @@ export const Register: React.FC = () => {
                   <span className="text-[11px] text-indigo-600 font-medium">Valid for 5 mins</span>
                 </div>
 
-                {otpSuccessMessage && (
-                  <p className="text-[11px] text-indigo-700 font-medium">
-                    {otpSuccessMessage}
-                  </p>
-                )}
-
-                {/* Instant Testing Auto-Fill Chip */}
-                {generatedTestOtp && (
-                  <div className="p-2 bg-white rounded-xl border border-indigo-200 flex items-center justify-between text-xs">
-                    <span className="text-slate-600 text-[11px]">
-                      Test OTP: <strong className="text-indigo-600 font-mono text-sm tracking-wider">{generatedTestOtp}</strong>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setOtp(generatedTestOtp)}
-                      className="px-2 py-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
-                    >
-                      Auto-fill OTP
-                    </button>
-                  </div>
-                )}
+                <p className="text-[11px] text-slate-600">
+                  {otpSuccessMessage || 'Enter the 6-digit verification code received via SMS on your mobile phone.'}
+                </p>
 
                 <div className="flex space-x-2">
                   <input

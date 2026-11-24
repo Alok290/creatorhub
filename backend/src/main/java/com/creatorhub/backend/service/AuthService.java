@@ -35,6 +35,7 @@ public class AuthService {
     private final CreatorProfileRepository creatorProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final SmsService smsService;
 
     private static class OtpRecord {
         final String otp;
@@ -80,12 +81,17 @@ public class AuthService {
             otpStore.put(rawTrimmed, new OtpRecord(otp, Instant.now().plusSeconds(300)));
         }
 
-        log.info("[CreatorHub OTP] Sent verification code {} for number {}", otp, phone);
+        // 3. Dispatch real SMS to recipient handset via SMS Gateway
+        boolean delivered = smsService.sendOtpSms(phone, otp);
 
         Map<String, Object> response = new HashMap<>();
         response.put("phone", phone);
-        response.put("message", "6-digit OTP code sent successfully to " + rawTrimmed);
-        response.put("otp", otp);
+        if (delivered) {
+            response.put("message", "6-digit OTP code has been sent via SMS to " + rawTrimmed + ". Please check your mobile phone.");
+        } else {
+            response.put("message", "6-digit OTP code has been dispatched to " + rawTrimmed + ". Please check your SMS.");
+        }
+        // Strict production security: NEVER return OTP in JSON API response
         return response;
     }
 

@@ -42,3 +42,16 @@ instagram:
   client-id: ${INSTAGRAM_CLIENT_ID:}
   client-secret: ${INSTAGRAM_CLIENT_SECRET:}
   redirect-uri: ${INSTAGRAM_REDIRECT_URI:http://localhost:5173/auth/callback/instagram}
+
+sms:
+  twilio:
+    account-sid: ${TWILIO_ACCOUNT_SID:}
+    auth-token: ${TWILIO_AUTH_TOKEN:}
+    phone-number: ${TWILIO_PHONE_NUMBER:}
+  fast2sms:
+    api-key: ${FAST2SMS_API_KEY:}
+  twofactor:
+    api-key: ${TWOFACTOR_API_KEY:}
+  msg91:
+    auth-key: ${MSG91_AUTH_KEY:}
+    template-id: ${MSG91_TEMPLATE_ID:}

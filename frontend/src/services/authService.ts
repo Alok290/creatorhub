@@ -2,8 +2,8 @@ import { api } from './api';
 import { AuthResponse, User } from '../types';
 
 export const authService = {
-  async sendOtp(phone: string): Promise<{ phone: string; message: string; otp?: string }> {
-    return api.post<{ phone: string; message: string; otp?: string }>('/auth/send-otp', { phone });
+  async sendOtp(phone: string): Promise<{ phone: string; message: string }> {
+    return api.post<{ phone: string; message: string }>('/auth/send-otp', { phone });
   },
 
   async verifyOtp(phone: string, otp: string): Promise<{ verified: boolean; phone: string }> {
