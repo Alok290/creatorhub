@@ -84,12 +84,14 @@ public class AuthService {
         // 3. Dispatch real SMS to recipient handset via SMS Gateway
         boolean delivered = smsService.sendOtpSms(phone, otp);
 
+        log.info("[CreatorHub OTP Verification] Phone: {} | Generated 6-Digit Code: {} | Carrier SMS Delivered: {}", phone, otp, delivered);
+
         Map<String, Object> response = new HashMap<>();
         response.put("phone", phone);
         if (delivered) {
             response.put("message", "6-digit OTP code has been sent via SMS to " + rawTrimmed + ". Please check your mobile phone.");
         } else {
-            response.put("message", "6-digit OTP code has been dispatched to " + rawTrimmed + ". Please check your SMS.");
+            response.put("message", "SMS Gateway not configured on server. Please add FAST2SMS_API_KEY or TWILIO credentials in Render environment variables. (Check Render server logs for this code).");
         }
         // Strict production security: NEVER return OTP in JSON API response
         return response;
