@@ -71,9 +71,16 @@ public class AuthService {
             throw new IllegalArgumentException("An account with phone number " + rawTrimmed + " already exists. Please log in instead.");
         }
 
-        // 2. Generate secure 6-digit OTP
+        // 2. Generate secure 6-digit fallback OTP
         int code = 100000 + new java.security.SecureRandom().nextInt(900000);
         String otp = String.valueOf(code);
+
+        // 3. Dispatch real SMS to recipient handset via SMS Gateway
+        String deliveredOtp = smsService.sendOtpSms(phone, otp);
+        boolean delivered = (deliveredOtp != null && !deliveredOtp.isBlank());
+        if (delivered) {
+            otp = deliveredOtp; // Use the exact 6-digit code sent in the carrier SMS
+        }
 
         // Store with 5-minute expiration
         otpStore.put(phone, new OtpRecord(otp, Instant.now().plusSeconds(300)));
@@ -81,17 +88,14 @@ public class AuthService {
             otpStore.put(rawTrimmed, new OtpRecord(otp, Instant.now().plusSeconds(300)));
         }
 
-        // 3. Dispatch real SMS to recipient handset via SMS Gateway
-        boolean delivered = smsService.sendOtpSms(phone, otp);
-
-        log.info("[CreatorHub OTP Verification] Phone: {} | Generated 6-Digit Code: {} | Carrier SMS Delivered: {}", phone, otp, delivered);
+        log.info("[CreatorHub OTP Verification] Phone: {} | Active 6-Digit Code: {} | Carrier SMS Delivered: {}", phone, otp, delivered);
 
         Map<String, Object> response = new HashMap<>();
         response.put("phone", phone);
         if (delivered) {
             response.put("message", "6-digit OTP code has been sent via SMS to " + rawTrimmed + ". Please check your mobile phone.");
         } else {
-            response.put("message", "SMS Gateway not configured on server. Please add FAST2SMS_API_KEY or TWILIO credentials in Render environment variables. (Check Render server logs for this code).");
+            response.put("message", "SMS Gateway credentials required in Render. Please add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER.");
         }
         // Strict production security: NEVER return OTP in JSON API response
         return response;
